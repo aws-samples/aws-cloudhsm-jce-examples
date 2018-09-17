@@ -21,9 +21,7 @@ import com.cavium.cfm2.Util;
 import com.cavium.key.*;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import javax.crypto.*;
 import java.io.IOException;
 import java.security.*;
 import java.util.Base64;
@@ -32,8 +30,7 @@ import java.util.Base64;
  * This sample demonstrates how to use AES to wrap and unwrap a key into and out of the HSM.
  */
 public class AESWrappingRunner {
-    public static void main(String[] args)
-            throws InvalidKeyException, InvalidAlgorithmParameterException, NoSuchAlgorithmException {
+    public static void main(String[] args) throws Exception {
         try {
             Security.addProvider(new com.cavium.provider.CaviumProvider());
         } catch (IOException ex) {
@@ -65,20 +62,23 @@ public class AESWrappingRunner {
      * @param wrappingKey
      * @param extractableKey
      * @throws InvalidKeyException
-     * @throws InvalidAlgorithmParameterException
      * @throws NoSuchAlgorithmException
-     * @throws CFM2Exception
+     * @throws NoSuchProviderException
+     * @throws NoSuchPaddingException
+     * @throws IllegalBlockSizeException
      */
     private static void wrap(CaviumKey wrappingKey, CaviumKey extractableKey)
-            throws InvalidKeyException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, CFM2Exception {
+            throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
-        CaviumAESKeyGenParameterSpec spec = new CaviumAESKeyGenParameterSpec();
+        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
+        cipher.init(Cipher.WRAP_MODE, wrappingKey);
 
         // Wrap the extractable key using the wrappingKey.
-        byte[] wrappedBytes = Util.wrapKey(wrappingKey, extractableKey);
+        byte[] wrappedBytes = cipher.wrap(extractableKey);
 
         // Unwrap the wrapped key using the wrapping key.
-        Key unwrappedExtractableKey = Util.unwrapKey(wrappingKey, wrappedBytes, "AES", Cipher.SECRET_KEY, spec);
+        cipher.init(Cipher.UNWRAP_MODE, wrappingKey);
+        Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
         // Compare the two keys.
         // Notice that extractable keys can be exported from the HSM using the .getEncoded() method.
