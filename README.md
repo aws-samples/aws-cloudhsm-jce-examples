@@ -51,5 +51,5 @@ All Java dependencies should be bundled in the fat jars. You will only need to s
 native library in `/opt/cloudhsm/lib`. Jars can be run using the following command line (as an example): 
 
 ```
-java -Djava.library.path=/opt/cloudhsm/lib/ -jar target/assembly/login-runner.jar --help
+java -ea -Djava.library.path=/opt/cloudhsm/lib/ -jar target/assembly/login-runner.jar --help
 ```
