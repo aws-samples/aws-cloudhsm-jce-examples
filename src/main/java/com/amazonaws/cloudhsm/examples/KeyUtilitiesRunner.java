@@ -187,6 +187,9 @@ public class KeyUtilitiesRunner {
         else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_RSA && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
             CaviumRSAPublicKey pubKey = new CaviumRSAPublicKey(handle, cka);
             return pubKey;
+        } else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_GENERIC_SECRET) {
+            CaviumKey key = new CaviumAESKey(handle, cka);
+            return key;
         }
 
         return null;
