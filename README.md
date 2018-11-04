@@ -11,7 +11,12 @@ This sample code is made available under a modified MIT license. See the LICENSE
 
 ### Dependencies
 
-The examples are tested on an fresh Amazon Linux 2 AMI. You will need to have the following packages 
+The CloudHSM Client and JCE dependencies are required. They should be installed using the official
+procedures documented here:
+
+* https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install.html
+
+The examples are tested on a fresh Amazon Linux 2 AMI. You will need to have the following packages 
 installed:
 
 * OpenJDK 8
@@ -23,10 +28,21 @@ You can install these packages on Amazon Linux 2 by running
 sudo yum install -y java maven
 ```
 
-The CloudHSM Client and JCE dependencies are also required. They should be installed using the official
-procedures documented here:
+If you are running on Amazon Linux 1, you will need to install extra packages to get Maven.
+You can follow these instructions to build the samples on Amazon Linux 1:
 
-* https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install.html
+```
+# Maven is only available through extra packages
+sudo wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+sudo sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
+
+# You will need Java 1.8 to build the samples
+sudo yum install -y java-1.8.0-openjdk-devel
+sudo yum install -y apache-maven
+
+# When updating alternatives, choose the 1.8 path: /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java
+sudo update-alternatives --config java
+```
 
 
 ### Building
