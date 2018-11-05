@@ -73,7 +73,7 @@ public class AESGCMEncryptDecryptRunner {
      * @param key
      * @param plainText
      * @param aad
-     * @return byte[] containing the IV and cipherText
+     * @return List of byte[] containing the IV and cipherText
      */
     public static List<byte[]> encrypt(Key key, byte[] plainText, byte[] aad) {
         try {
