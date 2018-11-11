@@ -26,6 +26,9 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
+/**
+ * Symmetric key generation examples.
+ */
 public class SymmetricKeys {
     /**
      * Generate an AES key.
