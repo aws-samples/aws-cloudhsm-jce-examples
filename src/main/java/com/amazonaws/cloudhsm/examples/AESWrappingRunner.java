@@ -48,6 +48,10 @@ public class AESWrappingRunner {
             // Using the wrapping key, wrap and unwrap the extractable key.
             wrap(wrappingKey, extractableKey);
 
+            // Demonstrate how there is extra padding on the wrapped key
+            // that the customer needs to be aware of when using multiple providers.
+            padding_demonstration(wrappingKey, extractableKey);
+
             // Clean up the keys.
             Util.deleteKey(wrappingKey);
             Util.deleteKey(extractableKey);
@@ -59,6 +63,7 @@ public class AESWrappingRunner {
 
     /**
      * Using the wrapping key, wrap and unwrap the extractable key.
+     *
      * @param wrappingKey
      * @param extractableKey
      * @throws InvalidKeyException
@@ -82,13 +87,51 @@ public class AESWrappingRunner {
 
         // Compare the two keys.
         // Notice that extractable keys can be exported from the HSM using the .getEncoded() method.
-        assert(extractableKey.getEncoded().equals(unwrappedExtractableKey.getEncoded()));
-        System.out.printf("Verified unwrapped data: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
+        assert (extractableKey.getEncoded().equals(unwrappedExtractableKey.getEncoded()));
+        System.out.printf("\nVerified key when using the HSM to wrap and unwrap: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
+    }
+
+    /**
+     * This method demonstrates the PKCS#5 padding method that is used when wrapping keys through the JCE.
+     * When moving keys between providers it is important to know that this padding exists.
+     * @param wrappingKey
+     * @param extractableKey
+     * @throws InvalidKeyException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     * @throws NoSuchPaddingException
+     * @throws IllegalBlockSizeException
+     */
+    private static void padding_demonstration(CaviumKey wrappingKey, CaviumKey extractableKey)
+            throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
+
+        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
+        cipher.init(Cipher.WRAP_MODE, wrappingKey);
+
+        // Wrap the extractable key using the wrappingKey.
+        byte[] wrappedBytes = cipher.wrap(extractableKey);
+
+
+        // Create a SunJCE provider to unwrap the key, exposing the PKCS#5 padding.
+        Cipher sunCipher = Cipher.getInstance("AESWrap", "SunJCE");
+
+        // Unwrap using the SunJCE.
+        sunCipher.init(Cipher.UNWRAP_MODE, wrappingKey);
+        Key unwrappedExtractableKey = sunCipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
+
+        System.out.printf("\nUsing SunJCE to unwrap the key results in the following:\n");
+        byte[] unwrappedBytes = unwrappedExtractableKey.getEncoded();
+        for (int i = 0; i < unwrappedBytes.length; i++) {
+            System.out.printf("%02X", unwrappedBytes[i]);
+        }
+
+        System.out.printf("\nYou can see the PKCS#5 padding bytes at the end of the unwrapped key\n");
     }
 
     /**
      * Generate an extractable key that can be toggled persistent.
      * AES wrapping keys are required to be persistent. The keys being wrapped can be persistent or session keys.
+     *
      * @param keySizeInBits
      * @param keyLabel
      * @return CaviumKey that is extractable and persistent.
