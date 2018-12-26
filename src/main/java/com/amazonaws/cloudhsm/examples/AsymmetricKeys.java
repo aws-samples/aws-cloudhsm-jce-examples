@@ -50,6 +50,11 @@ public class AsymmetricKeys {
         boolean isExtractable = false;
         boolean isPersistent = false;
 
+        return generateECKeyPairWithParams(curveName, label, isExtractable, isPersistent);
+    }
+
+    public KeyPair generateECKeyPairWithParams(String curveName, String label, boolean isExtractable, boolean isPersistent)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
 
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("EC", "Cavium");
         keyPairGen.initialize(
@@ -77,6 +82,12 @@ public class AsymmetricKeys {
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         boolean isExtractable = false;
         boolean isPersistent = false;
+
+        return generateRSAKeyPairWithParams(keySizeInBits, label, isExtractable, isPersistent);
+    }
+
+    public KeyPair generateRSAKeyPairWithParams(int keySizeInBits, String label, boolean isExtractable, boolean isPersistent)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
 
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("rsa", "Cavium");;
         CaviumRSAKeyGenParameterSpec spec = new CaviumRSAKeyGenParameterSpec(keySizeInBits, new BigInteger("65537"), label + ":public", label + ":private", isExtractable, isPersistent);
