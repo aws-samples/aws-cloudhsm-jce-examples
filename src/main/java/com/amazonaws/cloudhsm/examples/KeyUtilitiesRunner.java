@@ -21,6 +21,7 @@ import com.cavium.cfm2.ImportKey;
 import com.cavium.cfm2.Util;
 import com.cavium.key.*;
 import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
+import com.cavium.key.parameter.CaviumECGenParameterSpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.KeyGenerator;
@@ -131,8 +132,21 @@ public class KeyUtilitiesRunner {
 
                     // Import the key as a session key that is extractable.
                     // You can use the key handle to identify the key in other operations.
-                    Key importedKey = importKey(keyToBeImported, "Test", true, false);
+                    Key importedKey = importKey(keyToBeImported, "Test", false, false);
                     displayKeyInfo((CaviumKey) importedKey);
+
+                    // Generate an extractable session EC keypair and import the private key.
+                    KeyPair ecPair = new AsymmetricKeys().generateECKeyPairWithParams(CaviumECGenParameterSpec.PRIME256V1, "ectest", true, false);
+                    Key k = exportKey(((CaviumKey)ecPair.getPrivate()).getHandle());
+                    importedKey = importKey(k, "EC Import Test", false, false);
+                    displayKeyInfo((CaviumKey) importedKey);
+
+                    // Generate an extractable session RSA keypair and import the private key.
+                    KeyPair rsaPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, "rsatest", true, false);
+                    k = exportKey(((CaviumKey)rsaPair.getPrivate()).getHandle());
+                    importedKey = importKey(k, "RSA Import Test", false, false);
+                    displayKeyInfo((CaviumKey) importedKey);
+
                     break;
                 }
                 case GET_KEY: {
@@ -226,6 +240,13 @@ public class KeyUtilitiesRunner {
             }
             else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_RSA && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
                 PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(encoded));
+                return publicKey;
+            } else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PRIVATE_KEY) {
+                PrivateKey privateKey = KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(encoded));
+                return privateKey;
+            }
+            else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
+                PublicKey publicKey = KeyFactory.getInstance("EC").generatePublic(new X509EncodedKeySpec(encoded));
                 return publicKey;
             }
         } catch (BadPaddingException | CFM2Exception e) {
