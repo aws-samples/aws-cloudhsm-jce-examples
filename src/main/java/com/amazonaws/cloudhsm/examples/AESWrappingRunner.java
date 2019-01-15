@@ -25,6 +25,7 @@ import javax.crypto.*;
 import java.io.IOException;
 import java.security.*;
 import java.util.Base64;
+import java.util.Arrays;
 
 /**
  * This sample demonstrates how to use AES to wrap and unwrap a key into and out of the HSM.
@@ -87,7 +88,7 @@ public class AESWrappingRunner {
 
         // Compare the two keys.
         // Notice that extractable keys can be exported from the HSM using the .getEncoded() method.
-        assert (extractableKey.getEncoded().equals(unwrappedExtractableKey.getEncoded()));
+        assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
         System.out.printf("\nVerified key when using the HSM to wrap and unwrap: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
     }
 
