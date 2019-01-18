@@ -36,7 +36,7 @@ public class SymmetricKeys {
      *
      * @param keySizeInBits Size of the key.
      * @param keyLabel      Label to associate with the key.
-     * @return CaviumKey object
+     * @return Key object
      */
     public static Key generateAESKey(int keySizeInBits, String keyLabel)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
@@ -57,7 +57,7 @@ public class SymmetricKeys {
      * In this example method, the key is never persistent and is never extractable.
      *
      * @param keyLabel
-     * @return CaviumKey object
+     * @return Key object
      * @throws InvalidAlgorithmParameterException
      * @throws NoSuchAlgorithmException
      * @throws NoSuchProviderException

@@ -202,7 +202,7 @@ public class SignThreadedRunner {
      * Only return the private key since this is a demo and that is all we need.
      * @param keySizeInBits
      * @param keyLabel
-     * @return CaviumKey that is extractable and persistent.
+     * @return KeyPair that is not extractable or persistent.
      */
     private static KeyPair generateKeyPair(int keySizeInBits, String keyLabel)
             throws InvalidAlgorithmParameterException,
