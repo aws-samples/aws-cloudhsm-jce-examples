@@ -206,18 +206,6 @@ public final class ClientFailureRunner {
         if (CFM2Exception.isClientDisconnectError(t)) {
             // This condition is the canonical way to check for client failures.
             peerDisconnected = true;
-        } else {
-            // This condition is a hack to catch the 0x40000046 error, which doesn't have a defined
-            // type in cloudhsm-client-jce 1.1.1. This will be fixed in the next client release.
-            while(t != null && !(t instanceof CFM2Exception)) {
-                t = t.getCause();
-            }
-
-            if (t != null) {
-                CFM2Exception ex = (CFM2Exception) t;
-                if (((CFM2Exception) t).getStatus() == 0x40000046)
-                    peerDisconnected = true;
-            }
         }
 
         return peerDisconnected;
