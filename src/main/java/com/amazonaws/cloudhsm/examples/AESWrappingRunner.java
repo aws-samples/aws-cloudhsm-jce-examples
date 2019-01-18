@@ -40,10 +40,10 @@ public class AESWrappingRunner {
         }
 
         // Wrapping keys must be persistent.
-        CaviumKey wrappingKey = generateExtractableKey(256, "Wrapping Key", true);
+        Key wrappingKey = generateExtractableKey(256, "Wrapping Key", true);
 
         // Extractable keys must be marked extractable.
-        CaviumKey extractableKey = generateExtractableKey(256, "Test Extractable Key", false);
+        Key extractableKey = generateExtractableKey(256, "Test Extractable Key", false);
 
         try {
             // Using the wrapping key, wrap and unwrap the extractable key.
@@ -54,11 +54,11 @@ public class AESWrappingRunner {
             padding_demonstration(wrappingKey, extractableKey);
 
             // Clean up the keys.
-            Util.deleteKey(wrappingKey);
-            Util.deleteKey(extractableKey);
+            Util.deleteKey((CaviumKey) wrappingKey);
+            Util.deleteKey((CaviumKey) extractableKey);
         } catch (CFM2Exception ex) {
             ex.printStackTrace();
-            System.out.printf("Failed to delete key handles: %d\n", wrappingKey.getHandle());
+            System.out.printf("Failed to delete key handles: %d\n", ((CaviumKey) wrappingKey).getHandle());
         }
     }
 
@@ -73,7 +73,7 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void wrap(CaviumKey wrappingKey, CaviumKey extractableKey)
+    private static void wrap(Key wrappingKey, Key extractableKey)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
         Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
@@ -103,7 +103,7 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void padding_demonstration(CaviumKey wrappingKey, CaviumKey extractableKey)
+    private static void padding_demonstration(Key wrappingKey, Key extractableKey)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
         Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
@@ -137,7 +137,7 @@ public class AESWrappingRunner {
      * @param keyLabel
      * @return CaviumKey that is extractable and persistent.
      */
-    private static CaviumKey generateExtractableKey(int keySizeInBits, String keyLabel, boolean isPersistent) {
+    private static Key generateExtractableKey(int keySizeInBits, String keyLabel, boolean isPersistent) {
         boolean isExtractable = true;
 
         try {
@@ -147,7 +147,7 @@ public class AESWrappingRunner {
             keyGen.init(aesSpec);
             SecretKey aesKey = keyGen.generateKey();
 
-            return (CaviumKey) aesKey;
+            return aesKey;
 
         } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
             e.printStackTrace();

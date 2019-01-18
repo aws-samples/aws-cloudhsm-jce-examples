@@ -18,7 +18,7 @@ package com.amazonaws.cloudhsm.examples;
 
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.Util;
-import com.cavium.key.*;
+import com.cavium.key.CaviumKey;
 import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 
 import java.io.IOException;

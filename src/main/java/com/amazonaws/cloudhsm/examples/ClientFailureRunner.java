@@ -18,21 +18,12 @@ package com.amazonaws.cloudhsm.examples;
 
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.LoginManager;
-import com.cavium.key.CaviumRSAPrivateKey;
-import com.cavium.key.CaviumRSAPublicKey;
 import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -102,11 +93,11 @@ public final class ClientFailureRunner {
             boolean sessionIsActive = true;
             while (sessionIsActive) {
                 try {
-                    byte[] signature = signMessage(sampleMessage, signingAlgorithm, (CaviumRSAPrivateKey) kp.getPrivate());
+                    byte[] signature = signMessage(sampleMessage, signingAlgorithm, kp.getPrivate());
 
                     boolean isVerificationSuccessful = verifySign(sampleMessage,
                             signingAlgorithm,
-                            (CaviumRSAPublicKey) kp.getPublic(),
+                            kp.getPublic(),
                             signature);
                     System.out.printf(".");
                 } catch (Exception ex) {
@@ -137,7 +128,7 @@ public final class ClientFailureRunner {
     public static byte[] signMessage(
             final String message,
             final String signingAlgorithm,
-            final CaviumRSAPrivateKey privateKey) throws NoSuchAlgorithmException, NoSuchProviderException, SignatureException, InvalidKeyException, UnsupportedEncodingException {
+            final PrivateKey privateKey) throws NoSuchAlgorithmException, NoSuchProviderException, SignatureException, InvalidKeyException, UnsupportedEncodingException {
         Signature sig = Signature.getInstance(signingAlgorithm, "Cavium");
         sig.initSign(privateKey);
         sig.update(message.getBytes("UTF-8"));
@@ -160,7 +151,7 @@ public final class ClientFailureRunner {
     public static boolean verifySign(
             final String message,
             final String signingAlgorithm,
-            final CaviumRSAPublicKey publicKey,
+            final PublicKey publicKey,
             final byte[] signature) throws NoSuchAlgorithmException, NoSuchProviderException, SignatureException, InvalidKeyException, UnsupportedEncodingException {
         Signature sig = Signature.getInstance(signingAlgorithm, "Cavium");
         sig.initVerify(publicKey);

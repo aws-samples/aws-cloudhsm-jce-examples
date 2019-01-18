@@ -58,9 +58,9 @@
                         <configuration>
                             <groupId>com.cavium</groupId>
                             <artifactId>cloudhsm</artifactId>
-                            <version>1.1.2</version>
+                            <version>1.1.1</version>
                             <packaging>jar</packaging>
-                            <file>/opt/cloudhsm/java/cloudhsm-1.1.2.jar</file>
+                            <file>/opt/cloudhsm/java/cloudhsm-1.1.1.jar</file>
                             <generatePom>true</generatePom>
                         </configuration>
                     </execution>
@@ -254,6 +254,32 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>build-rsawrap-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/rsawrap-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.RSAWrappingRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>rsawrap-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>build-rsaops-runner</id>
                         <phase>package</phase>
                         <goals>
@@ -350,7 +376,7 @@
         <dependency>
             <groupId>com.cavium</groupId>
             <artifactId>cloudhsm</artifactId>
-            <version>1.1.2</version>
+            <version>1.1.1</version>
         </dependency>
     </dependencies>
 </project>

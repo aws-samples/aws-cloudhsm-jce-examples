@@ -55,9 +55,9 @@ public class KeyStoreExampleRunner {
         if (keyStore.containsAlias(keyLabel)) {
             // If using implicit credentials, the getKeyByHandle() method will kickoff the first authentication attempt.
             // If the session is already authenticated, then getKeyByHandle() will simply reach out to the HSM.
-            CaviumKey k = (CaviumKey) keyStore.getKey(keyLabel, null);
-            System.out.printf("Generated key label: %s\n", k.getLabel());
-            System.out.printf("Generated key handle: %d\n", k.getHandle());
+            Key k =  keyStore.getKey(keyLabel, null);
+            System.out.printf("Generated key label: %s\n", ((CaviumKey) k).getLabel());
+            System.out.printf("Generated key handle: %d\n", ((CaviumKey) k).getHandle());
         }
 
         // Iterate throught the rest of the KeyStore.
