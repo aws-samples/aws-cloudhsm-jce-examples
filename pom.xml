@@ -58,9 +58,9 @@
                         <configuration>
                             <groupId>com.cavium</groupId>
                             <artifactId>cloudhsm</artifactId>
-                            <version>1.1.2</version>
+                            <version>2.0.0</version>
                             <packaging>jar</packaging>
-                            <file>/opt/cloudhsm/java/cloudhsm-1.1.2.jar</file>
+                            <file>/opt/cloudhsm/java/cloudhsm-2.0.0.jar</file>
                             <generatePom>true</generatePom>
                         </configuration>
                     </execution>
@@ -137,6 +137,32 @@
                                 </transformer>
                             </transformers>
                             <finalName>cbc-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-ecb-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/ecb-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.ECBEncryptDecryptRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>ecb-runner</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -254,6 +280,32 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>build-rsawrap-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/rsawrap-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.RSAWrappingRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>rsawrap-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>build-rsaops-runner</id>
                         <phase>package</phase>
                         <goals>
@@ -331,6 +383,32 @@
                             </filters>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>build-rsaimport-utility</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/rsa-import-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.RSAImportKey</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>rsa-import-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -350,7 +428,7 @@
         <dependency>
             <groupId>com.cavium</groupId>
             <artifactId>cloudhsm</artifactId>
-            <version>1.1.2</version>
+            <version>2.0.0</version>
         </dependency>
     </dependencies>
 </project>

@@ -27,7 +27,12 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.*;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -46,6 +51,7 @@ public class KeyUtilitiesRunner {
             "\t--get-key\t\tGet information about a key in the HSM\n" +
             "\t--delete-key\t\tDelete a key from the HSM\n" +
             "\t--import-key\t\tGenerates a key locally and imports it into the HSM\n" +
+            "\t--import-rsa-pem\t\tRead a PEM file and import the private key\n" +
             "\t--export-key\t\tExport the bytes from a key in the HSM\n\n";
 
     private enum modes {
@@ -53,7 +59,8 @@ public class KeyUtilitiesRunner {
         GET_KEY,
         DELETE_KEY,
         EXPORT_KEY,
-        IMPORT_KEY
+        IMPORT_KEY,
+        IMPORT_PEM
     }
 
     public static void main(String[] args) throws Exception {
@@ -65,6 +72,7 @@ public class KeyUtilitiesRunner {
         }
 
         String label = null;
+        String pemFile = null;
         long handle = 0;
         modes mode = modes.INVALID;
 
@@ -90,6 +98,10 @@ public class KeyUtilitiesRunner {
                 case "--import-key":
                     mode = modes.IMPORT_KEY;
                     break;
+                case "--import-rsa-pem":
+                    pemFile = args[++i];
+                    mode = modes.IMPORT_PEM;
+                    break;
             }
         }
 
@@ -97,8 +109,12 @@ public class KeyUtilitiesRunner {
             System.out.println("Please specify one of key handle or label");
             help();
             return;
-        } else if (null == label && 0 == handle && modes.IMPORT_KEY != mode) {
+        } else if (null == label && 0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
             System.out.println("Please specify either key handle or label");
+            help();
+            return;
+        } else if (modes.IMPORT_PEM == mode && null == pemFile) {
+            System.out.println("Please specify the PEM file name");
             help();
             return;
         }
@@ -106,7 +122,7 @@ public class KeyUtilitiesRunner {
         // Using the supplied label, find the associated key handle.
         // The handle for the *first* key found using the label will be the handle returned.
         // If multiple keys have the same label, only the first key can be returned.
-        if (0 == handle && modes.IMPORT_KEY != mode) {
+        if (0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
             try {
                 long[] handles = { 0 };
                 Util.findKey(label, handles);
@@ -123,6 +139,14 @@ public class KeyUtilitiesRunner {
 
         try {
             switch (mode) {
+                case IMPORT_PEM: {
+                    Path path = Paths.get(pemFile);
+                    byte[] pem = Files.readAllBytes(path);
+                    Key privKey = readPem(pem);
+                    Key importedKey = importKey(privKey, "RSA Import PEM Test", false, false);
+                    displayKeyInfo((CaviumKey) importedKey);
+                    break;
+                }
                 case IMPORT_KEY: {
                     // Generate a 256-bit AES symmetric key.
                     // This key is not yet in the HSM. It will have to be imported using a CaviumKeySpec.
@@ -277,6 +301,31 @@ public class KeyUtilitiesRunner {
             e.printStackTrace();
         }
 
+        return null;
+    }
+
+    /**
+     * Import a PEM file with a PKCS#8 encoded key. You can generate this PEM file with OpenSSL.
+     * openssl genrsa -out priv.pem 2048
+     * openssl pkcs8 -topk8 -in priv.pem -inform pem -out priv_pkcs8.pem -outform pem -nocrypt
+     * @param pem
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeySpecException
+     * @throws UnsupportedEncodingException
+     */
+    private static Key readPem(byte[] pem) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException {
+        String privateKeyPEM = new String(pem, "ASCII");
+        privateKeyPEM = privateKeyPEM.replaceAll("^-----BEGIN .* KEY-----\n", "");
+        privateKeyPEM = privateKeyPEM.replaceAll("-----END .* KEY-----$", "");
+
+        byte[] encoded = Base64.getMimeDecoder().decode(privateKeyPEM);
+        try {
+            PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(encoded));
+            return privateKey;
+        } catch (InvalidKeySpecException e) {
+            System.out.printf("Exception while creating KeySpec. Is your key stored in PKCS#8 format?\n\n");
+        }
         return null;
     }
 

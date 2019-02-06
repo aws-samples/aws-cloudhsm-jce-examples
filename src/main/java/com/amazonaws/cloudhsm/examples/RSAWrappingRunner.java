@@ -22,15 +22,18 @@ import com.cavium.key.*;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 
 import javax.crypto.*;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import java.io.IOException;
 import java.security.*;
+import java.security.spec.MGF1ParameterSpec;
 import java.util.Base64;
 import java.util.Arrays;
 
 /**
- * This sample demonstrates how to use AES to wrap and unwrap a key into and out of the HSM.
+ * This sample demonstrates how to use RSA to wrap and unwrap a key into and out of the HSM.
  */
-public class AESWrappingRunner {
+public class RSAWrappingRunner {
     public static void main(String[] args) throws Exception {
         try {
             Security.addProvider(new com.cavium.provider.CaviumProvider());
@@ -40,30 +43,29 @@ public class AESWrappingRunner {
         }
 
         // Wrapping keys must be persistent.
-        Key wrappingKey = generateExtractableKey(256, "Wrapping Key", true);
+        KeyPair wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, "RSA Wrapping Test", true, true);
 
         // Extractable keys must be marked extractable.
-        Key extractableKey = generateExtractableKey(256, "Test Extractable Key", false);
+        Key extractableKey = generateExtractableKey(256, "Extractable key to wrap", false);
 
         try {
-            // Using the wrapping key, wrap and unwrap the extractable key.
-            wrap(wrappingKey, extractableKey);
+            // Using the wrapping keypair, wrap and unwrap the extractable key with OAEP wrapping.
+            rsaOAEPWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
 
-            // Demonstrate how there is extra padding on the wrapped key
-            // that the customer needs to be aware of when using multiple providers.
-            padding_demonstration(wrappingKey, extractableKey);
+            // Using the wrapping keypair, wrap and unwrap the extractable key with RSA AES wrapping.
+            rsaAesWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
 
             // Clean up the keys.
-            Util.deleteKey((CaviumKey) wrappingKey);
+            Util.deleteKey((CaviumKey) wrappingKeyPair.getPrivate());
             Util.deleteKey((CaviumKey) extractableKey);
         } catch (CFM2Exception ex) {
             ex.printStackTrace();
-            System.out.printf("Failed to delete key handles: %d\n", ((CaviumKey) wrappingKey).getHandle());
+            System.out.printf("Failed to delete key handles: %d\n", ((CaviumKey) wrappingKeyPair.getPrivate()).getHandle());
         }
     }
 
     /**
-     * Using the wrapping key, wrap and unwrap the extractable key.
+     * Using the wrapping keypair, wrap and unwrap the extractable key with RSAAESWrap.
      *
      * @param wrappingKey
      * @param extractableKey
@@ -73,28 +75,31 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void wrap(Key wrappingKey, Key extractableKey)
+    private static void rsaAesWrap(Key wrappingKey, Key unwrappingKey, Key extractableKey)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
+        Cipher cipher = Cipher.getInstance("RSAAESWrap", "Cavium");
         cipher.init(Cipher.WRAP_MODE, wrappingKey);
 
         // Wrap the extractable key using the wrappingKey.
         byte[] wrappedBytes = cipher.wrap(extractableKey);
 
-        // Unwrap the wrapped key using the wrapping key.
-        cipher.init(Cipher.UNWRAP_MODE, wrappingKey);
+        // Unwrap using the SunJCE.
+        cipher.init(Cipher.UNWRAP_MODE, unwrappingKey);
         Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
         // Compare the two keys.
         // Notice that extractable keys can be exported from the HSM using the .getEncoded() method.
         assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
-        System.out.printf("\nVerified key when using the HSM to wrap and unwrap: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
+        System.out.printf("\nVerified key when using RSAAES inside the HSM to wrap and unwrap: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
     }
 
     /**
-     * This method demonstrates the PKCS#5 padding method that is used when wrapping keys through the JCE.
-     * When moving keys between providers it is important to know that this padding exists.
+     * Using the wrapping keypair, wrap and unwrap the extractable key with OAEP.
+     * Use both the Cavium provider and the SunJCE to demonstrate compatibility. Note this works because the
+     * wrapping keypair is marked "extractable". This allows the SunJCE to extract the unwrapping key before
+     * performing the operation.
+     *
      * @param wrappingKey
      * @param extractableKey
      * @throws InvalidKeyException
@@ -103,30 +108,27 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void padding_demonstration(Key wrappingKey, Key extractableKey)
-            throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
+    private static void rsaOAEPWrap(Key wrappingKey, Key unwrappingKey, Key extractableKey)
+            throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
-        cipher.init(Cipher.WRAP_MODE, wrappingKey);
+        OAEPParameterSpec spec = new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
+        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", "Cavium");
+        cipher.init(Cipher.WRAP_MODE, wrappingKey, spec);
 
         // Wrap the extractable key using the wrappingKey.
         byte[] wrappedBytes = cipher.wrap(extractableKey);
 
-
         // Create a SunJCE provider to unwrap the key, exposing the PKCS#5 padding.
-        Cipher sunCipher = Cipher.getInstance("AESWrap", "SunJCE");
+        Cipher sunCipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", "SunJCE");
 
         // Unwrap using the SunJCE.
-        sunCipher.init(Cipher.UNWRAP_MODE, wrappingKey);
+        sunCipher.init(Cipher.UNWRAP_MODE, unwrappingKey, spec);
         Key unwrappedExtractableKey = sunCipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
-        System.out.printf("\nUsing SunJCE to unwrap the key results in the following:\n");
-        byte[] unwrappedBytes = unwrappedExtractableKey.getEncoded();
-        for (int i = 0; i < unwrappedBytes.length; i++) {
-            System.out.printf("%02X", unwrappedBytes[i]);
-        }
-
-        System.out.printf("\nYou can see the PKCS#5 padding bytes at the end of the unwrapped key\n");
+        // Compare the two keys.
+        // Notice that extractable keys can be exported from the HSM using the .getEncoded() method.
+        assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
+        System.out.printf("\nVerified key when using OAEP in the HSM and SunJCE to wrap and unwrap: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
     }
 
     /**
@@ -163,5 +165,4 @@ public class AESWrappingRunner {
 
         return null;
     }
-
 }

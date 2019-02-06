@@ -16,13 +16,13 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.key.CaviumKey;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 import com.cavium.key.parameter.CaviumDESKeyGenParameterSpec;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
@@ -36,9 +36,9 @@ public class SymmetricKeys {
      *
      * @param keySizeInBits Size of the key.
      * @param keyLabel      Label to associate with the key.
-     * @return CaviumKey object
+     * @return Key object
      */
-    public static CaviumKey generateAESKey(int keySizeInBits, String keyLabel)
+    public static Key generateAESKey(int keySizeInBits, String keyLabel)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         boolean isExtractable = false;
         boolean isPersistent = false;
@@ -49,7 +49,7 @@ public class SymmetricKeys {
         keyGen.init(aesSpec);
         SecretKey aesKey = keyGen.generateKey();
 
-        return (CaviumKey) aesKey;
+        return aesKey;
     }
 
     /**
@@ -57,12 +57,12 @@ public class SymmetricKeys {
      * In this example method, the key is never persistent and is never extractable.
      *
      * @param keyLabel
-     * @return CaviumKey object
+     * @return Key object
      * @throws InvalidAlgorithmParameterException
      * @throws NoSuchAlgorithmException
      * @throws NoSuchProviderException
      */
-    public static CaviumKey generateDESKey(String keyLabel)
+    public static Key generateDESKey(String keyLabel)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         boolean isExtractable = false;
         boolean isPersistent = false;
@@ -72,6 +72,6 @@ public class SymmetricKeys {
         CaviumDESKeyGenParameterSpec desSpec = new CaviumDESKeyGenParameterSpec(192, keyLabel, isExtractable, isPersistent);
         keyGen.init(desSpec);
         SecretKey des3Key = keyGen.generateKey();
-        return (CaviumKey) des3Key;
+        return des3Key;
     }
 }

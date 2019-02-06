@@ -80,7 +80,8 @@ public class ECOperationsRunner {
 
         String plainText = "This is a sample Plain Text Message!";
 
-        KeyPair kp = new AsymmetricKeys().generateECKeyPair(CaviumECGenParameterSpec.PRIME256V1, "ectest");
+        // Use the SECP256k1 curve to sign and verify.
+        KeyPair kp = new AsymmetricKeys().generateECKeyPair(CaviumECGenParameterSpec.K256, "ectest");
         String signingAlgorithm = "SHA512withECDSA";
         byte[] signature = sign(plainText.getBytes("UTF-8"), kp.getPrivate(), signingAlgorithm);
         System.out.println("Plaintext signature = " + Base64.getEncoder().encodeToString(signature));
