@@ -20,6 +20,7 @@ import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.Util;
 import com.cavium.key.*;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
+import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
 
 import javax.crypto.*;
 import javax.crypto.spec.OAEPParameterSpec;
@@ -55,9 +56,13 @@ public class RSAWrappingRunner {
             // Using the wrapping keypair, wrap and unwrap the extractable key with RSA AES wrapping.
             rsaAesWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
 
+            // Unwrap a key as non-extractable and persistent.
+            Key unwrappedPersistentKey = rsaUnwrapWithSpecification(wrappingKeyPair);
+
             // Clean up the keys.
             Util.deleteKey((CaviumKey) wrappingKeyPair.getPrivate());
             Util.deleteKey((CaviumKey) extractableKey);
+            Util.deleteKey((CaviumKey) unwrappedPersistentKey);
         } catch (CFM2Exception ex) {
             ex.printStackTrace();
             System.out.printf("Failed to delete key handles: %d\n", ((CaviumKey) wrappingKeyPair.getPrivate()).getHandle());
@@ -118,10 +123,9 @@ public class RSAWrappingRunner {
         // Wrap the extractable key using the wrappingKey.
         byte[] wrappedBytes = cipher.wrap(extractableKey);
 
-        // Create a SunJCE provider to unwrap the key, exposing the PKCS#5 padding.
-        Cipher sunCipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", "SunJCE");
 
         // Unwrap using the SunJCE.
+        Cipher sunCipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", "SunJCE");
         sunCipher.init(Cipher.UNWRAP_MODE, unwrappingKey, spec);
         Key unwrappedExtractableKey = sunCipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
@@ -129,6 +133,64 @@ public class RSAWrappingRunner {
         // Notice that extractable keys can be exported from the HSM using the .getEncoded() method.
         assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
         System.out.printf("\nVerified key when using OAEP in the HSM and SunJCE to wrap and unwrap: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
+    }
+
+    /**
+     * Demonstrate how to unwrap a key using a Specification.
+     * This example shows how to unwrap a key with specific label,
+     * persistence, and extractable settings.
+     *
+     * @param wrappingKeyPair
+     * @return
+     * @throws InvalidAlgorithmParameterException
+     * @throws InvalidKeyException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     * @throws NoSuchPaddingException
+     * @throws IllegalBlockSizeException
+     */
+    private static Key rsaUnwrapWithSpecification(KeyPair wrappingKeyPair)
+            throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
+
+        // Generate a temporary key that we can wrap in the SunJCE
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(256);
+        SecretKey aesKey = keyGen.generateKey();
+
+        // Wrap the key and delete it.
+        OAEPParameterSpec spec = new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
+        Cipher wrapCipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", "SunJCE");
+        wrapCipher.init(Cipher.WRAP_MODE, wrappingKeyPair.getPublic(), spec);
+        byte[] wrappedKeyBytes = wrapCipher.wrap(aesKey);
+
+        // Create a specification to unwrap this key as non-extractable and persistent.
+        CaviumKeyGenAlgorithmParameterSpec unwrappingSpec = new
+                CaviumKeyGenAlgorithmParameterSpec("Testkey1", false, true);
+
+        // Create a Cavium provider to unwrap the key.
+        Key unwrappedKey = null;
+
+        try {
+            // We provide a Utility method to unwrap keys with a custom specification.
+            // This allows customers to configure the persistence, extractability, and
+            // labels of the keys they unwrap.
+            unwrappedKey = Util.rsaUnwrapKey(
+                    (CaviumRSAPrivateKey) wrappingKeyPair.getPrivate(),
+                    wrappedKeyBytes,
+                    "AES",
+                    Cipher.SECRET_KEY,
+                    unwrappingSpec,
+                    "OAEPWithSHA-256ANDMGF1Padding");
+        } catch (CFM2Exception ex) {
+            throw new RuntimeException(ex);
+        }
+
+        System.out.printf("\nVerified key when using specification to unwrap: \n");
+        System.out.printf("Key handle:  %d\n", ((CaviumKey) unwrappedKey).getHandle());
+        System.out.printf("Persistent:  %b\n", ((CaviumKey) unwrappedKey).isPersistent());
+        System.out.printf("Extractable: %b\n", ((CaviumKey) unwrappedKey).isExtractable());
+
+        return unwrappedKey;
     }
 
     /**
