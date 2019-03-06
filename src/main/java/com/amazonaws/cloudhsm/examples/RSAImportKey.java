@@ -23,7 +23,6 @@ import com.cavium.key.*;
 import javax.crypto.Cipher;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -103,16 +102,19 @@ public class RSAImportKey {
             return;
         }
 
+        MGF1ParameterSpec paramSpec = null;
         switch (hash) {
             case "SHA1":
             case "SHA-1":
                 transformation = "RSA/ECB/OAEPWithSHA-1ANDMGF1Padding";
                 hash = "SHA-1";
+                paramSpec = MGF1ParameterSpec.SHA1;
                 break;
             case "SHA256":
             case "SHA-256":
                 transformation = "RSA/ECB/OAEPWithSHA-256ANDMGF1Padding";
                 hash = "SHA-256";
+                paramSpec = MGF1ParameterSpec.SHA256;
                 break;
         }
 
@@ -137,7 +139,7 @@ public class RSAImportKey {
             return;
         }
 
-        OAEPParameterSpec spec = new OAEPParameterSpec(hash, "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT);
+        OAEPParameterSpec spec = new OAEPParameterSpec(hash, "MGF1", paramSpec, PSource.PSpecified.DEFAULT);
         Cipher cipher = Cipher.getInstance(transformation, "Cavium");
         cipher.init(Cipher.UNWRAP_MODE, unwrappingKey, spec);
         Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
