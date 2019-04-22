@@ -20,6 +20,7 @@
             </activation>
             <properties>
                 <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-2.0.0.jar</cloudhsmJarPath>
+                <cloudhsmVersion>2.0.0</cloudhsmVersion>
             </properties>
         </profile>
     </profiles>
@@ -70,7 +71,7 @@
                         <configuration>
                             <groupId>com.cavium</groupId>
                             <artifactId>cloudhsm</artifactId>
-                            <version>2.0.0</version>
+                            <version>${cloudhsmVersion}</version>
                             <packaging>jar</packaging>
                             <file>${cloudhsmJarPath}</file>
                             <generatePom>true</generatePom>
@@ -617,7 +618,7 @@
         <dependency>
             <groupId>com.cavium</groupId>
             <artifactId>cloudhsm</artifactId>
-            <version>2.0.0</version>
+            <version>${cloudhsmVersion}</version>
         </dependency>
     </dependencies>
 </project>
