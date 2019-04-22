@@ -69,3 +69,7 @@ native library in `/opt/cloudhsm/lib`. Jars can be run using the following comma
 ```
 java -ea -Djava.library.path=/opt/cloudhsm/lib/ -jar target/assembly/login-runner.jar --help
 ```
+
+## Running and verifying all the samples
+
+To run and verify all the samples together, run the command ```mvn verify```
