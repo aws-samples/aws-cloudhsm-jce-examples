@@ -225,7 +225,16 @@ public class KeyUtilitiesRunner {
         else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_RSA && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
             CaviumRSAPublicKey pubKey = new CaviumRSAPublicKey(handle, cka);
             return pubKey;
-        } else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_GENERIC_SECRET) {
+        }
+        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PRIVATE_KEY) {
+            CaviumECPrivateKey privKey = new CaviumECPrivateKey(handle, cka);
+            return privKey;
+        }
+        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
+            CaviumECPublicKey pubKey = new CaviumECPublicKey(handle, cka);
+            return pubKey;
+        }
+        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_GENERIC_SECRET) {
             CaviumKey key = new CaviumAESKey(handle, cka);
             return key;
         }
