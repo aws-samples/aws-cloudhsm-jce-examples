@@ -205,7 +205,20 @@ public final class ClientFailureRunner {
 
         if (CFM2Exception.isClientDisconnectError(t)) {
             // This condition is the canonical way to check for client failures.
-            peerDisconnected = true;
+            return true;
+        }
+
+        // There are cluster errors which aren't handled above, so
+        // unwrap the exception to look for specific error codes.
+        while (null != t && !(t instanceof CFM2Exception)) {
+            t = t.getCause();
+        }
+
+        // Check for a cluster error, which doesn't require a reconnect.
+        // In this case, this application will backoff until the cluster
+        // is reachable again.
+        if (null != t) {
+            return ((CFM2Exception) t).getStatus() == 0x30000088;
         }
 
         return peerDisconnected;
