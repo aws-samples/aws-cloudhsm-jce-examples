@@ -201,10 +201,8 @@ public final class ClientFailureRunner {
      * @return
      */
     private static boolean isPeerDisconnected(Throwable t) {
-        boolean peerDisconnected = false;
-
+        // This condition is the canonical way to check for client failures.
         if (CFM2Exception.isClientDisconnectError(t)) {
-            // This condition is the canonical way to check for client failures.
             return true;
         }
 
@@ -221,6 +219,6 @@ public final class ClientFailureRunner {
             return ((CFM2Exception) t).getStatus() == 0x30000088;
         }
 
-        return peerDisconnected;
+        return false;
     }
 }
