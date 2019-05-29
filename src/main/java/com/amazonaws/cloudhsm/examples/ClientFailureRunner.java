@@ -216,7 +216,8 @@ public final class ClientFailureRunner {
         // In this case, this application will backoff until the cluster
         // is reachable again.
         if (null != t) {
-            return ((CFM2Exception) t).getStatus() == 0x30000088;
+            int RET_CLUSTER_ERROR = 0x30000088;
+            return ((CFM2Exception) t).getStatus() == RET_CLUSTER_ERROR;
         }
 
         return false;
