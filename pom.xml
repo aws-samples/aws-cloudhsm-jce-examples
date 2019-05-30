@@ -12,6 +12,19 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
+    <profiles>
+        <profile>
+            <id>default-profile</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-2.0.3.jar</cloudhsmJarPath>
+                <cloudhsmVersion>2.0.3</cloudhsmVersion>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
@@ -58,9 +71,9 @@
                         <configuration>
                             <groupId>com.cavium</groupId>
                             <artifactId>cloudhsm</artifactId>
-                            <version>2.0.0</version>
+                            <version>${cloudhsmVersion}</version>
                             <packaging>jar</packaging>
-                            <file>/opt/cloudhsm/java/cloudhsm-2.0.0.jar</file>
+                            <file>${cloudhsmJarPath}</file>
                             <generatePom>true</generatePom>
                         </configuration>
                     </execution>
@@ -605,7 +618,7 @@
         <dependency>
             <groupId>com.cavium</groupId>
             <artifactId>cloudhsm</artifactId>
-            <version>2.0.0</version>
+            <version>${cloudhsmVersion}</version>
         </dependency>
     </dependencies>
 </project>
