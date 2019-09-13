@@ -19,8 +19,8 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-2.0.3.jar</cloudhsmJarPath>
-                <cloudhsmVersion>2.0.3</cloudhsmVersion>
+                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-2.0.4.jar</cloudhsmJarPath>
+                <cloudhsmVersion>2.0.4</cloudhsmVersion>
             </properties>
         </profile>
     </profiles>
