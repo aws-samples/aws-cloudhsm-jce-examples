@@ -293,6 +293,32 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>build-cloudhsm-keystore</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/cloudhsm-keystore-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.CloudHSMKeyStoreExampleRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>cloudhsm-keystore-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>build-rsawrap-runner</id>
                         <phase>package</phase>
                         <goals>
@@ -332,6 +358,32 @@
                                 </transformer>
                             </transformers>
                             <finalName>rsaops-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                     <execution>
+                        <id>build-ecdhops-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/ecdhops-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.ECDHOperationsRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>ecdhops-runner</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -549,6 +601,23 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>verify-cloudhsm-keystore</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/cloudhsm-keystore-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>verify-rsa-ops</id>
                         <phase>verify</phase>
                         <goals>
@@ -560,6 +629,23 @@
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/rsaops-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-ecdh-ops</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/ecdhops-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
