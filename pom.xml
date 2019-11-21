@@ -19,8 +19,8 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-2.0.4.jar</cloudhsmJarPath>
-                <cloudhsmVersion>2.0.4</cloudhsmVersion>
+                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-3.0.0.jar</cloudhsmJarPath>
+                <cloudhsmVersion>3.0.0</cloudhsmVersion>
             </properties>
         </profile>
     </profiles>
@@ -215,6 +215,58 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>build-aesctr-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/aesctr-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.AESCTREncryptDecryptRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>aesctr-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-desecb-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/desecb-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.DESedeECBEncryptDecryptRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>desecb-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>build-wrapping-runner</id>
                         <phase>package</phase>
                         <goals>
@@ -228,6 +280,32 @@
                                 </transformer>
                             </transformers>
                             <finalName>aes-wrapping-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-aes-gcm-wrapping-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/aes-gcm-wrapping-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.AESGCMWrappingRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>aes-gcm-wrapping-runner</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -423,6 +501,32 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>build-hmacops-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/hmacops-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.HMACOperationsRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>hmacops-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>build-key-utility</id>
                         <phase>package</phase>
                         <goals>
@@ -516,6 +620,40 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>verify-aes-ctr</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/aesctr-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-des-ecb</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/desecb-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>verify-aes-wrapping</id>
                         <phase>verify</phase>
                         <goals>
@@ -527,6 +665,23 @@
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aes-wrapping-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                     <execution>
+                        <id>verify-aes-gcm-wrapping</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/aes-gcm-wrapping-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
@@ -578,6 +733,23 @@
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/ecops-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-hmacops</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/hmacops-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
