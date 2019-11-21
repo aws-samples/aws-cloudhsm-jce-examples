@@ -18,13 +18,13 @@ package com.amazonaws.cloudhsm.examples;
 
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 import com.cavium.key.parameter.CaviumDESKeyGenParameterSpec;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+
 
 /**
  * Symmetric key generation examples.
@@ -41,6 +41,28 @@ public class SymmetricKeys {
     public static Key generateAESKey(int keySizeInBits, String keyLabel)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         boolean isExtractable = false;
+        boolean isPersistent = false;
+
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES", "Cavium");
+
+        CaviumAESKeyGenParameterSpec aesSpec = new CaviumAESKeyGenParameterSpec(keySizeInBits, keyLabel, isExtractable, isPersistent);
+        keyGen.init(aesSpec);
+        SecretKey aesKey = keyGen.generateKey();
+
+        return aesKey;
+    }
+
+    /**
+     * Generate an extractable AES key.
+     * In this example method, the key is extractable and is never persistent.
+     *
+     * @param keySizeInBits Size of the key.
+     * @param keyLabel      Label to associate with the key.
+     * @return Key object
+     */
+    public static Key generateExtractableAESKey(int keySizeInBits, String keyLabel)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        boolean isExtractable = true;
         boolean isPersistent = false;
 
         KeyGenerator keyGen = KeyGenerator.getInstance("AES", "Cavium");
