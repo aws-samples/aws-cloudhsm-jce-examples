@@ -31,6 +31,36 @@ import java.security.Key;
 import java.security.Security;
 import java.security.spec.MGF1ParameterSpec;
 
+/**
+ * This sample uses RSA OAEP padding to import a wrapped AES key.
+ * You can test this sample by wrapping a key from the command line using OpenSSL. You must generate a keypair locally:
+ *
+ * ```
+ *    $ openssl genrsa -out rsaprivate2048.pem 2048
+ *    $ openssl rsa -pubout -in rsaprivate2048.pem -out rsapublic2048.pem
+ *```
+
+ * Then you must import the private key using the Key Management Util (https://docs.aws.amazon.com/cloudhsm/latest/userguide/key_mgmt_util-importPrivateKey.html).
+ *
+ * Next, generate an AES key to wrap:
+ *
+ * ```
+ *    $ openssl rand 32 > aes32
+ * ```
+ *
+ * Now you are able wrap the aes32 key with the same parameters as you pass to this example.
+ * The resulting file, `aes32_wrapped_oaep_${HASH}`, can be used as the input to this sample.
+ *
+ * ```
+ *    $ export HASH=SHA256
+ *    $ openssl pkeyutl -encrypt \
+ *       -in aes32 -out aes32_wrapped_oaep_${HASH} \
+ *       -pkeyopt rsa_padding_mode:oaep \
+ *       -pkeyopt rsa_oaep_md:${HASH} \
+ *       -pkeyopt rsa_mgf1_md:${HASH} \
+ *       -pubin -inkey rsapublic2048.pem
+ * ```
+ */
 public class RSAImportKey {
     private static String helpString = "RSAImportKey\n" +
             "This tool uses an RSA private key to unwrap an AES key. The AES key must have been wrapped with OAEP padding\n" +
@@ -38,7 +68,7 @@ public class RSAImportKey {
             "Options\n" +
             "\t--hash\t\t\tType of hash used to wrap [SHA1, SHA256(default)].\n" +
             "\t--key-size\t\tSize of the wrapping key in bits [2048, 4096].\n" +
-            "\t--wrapped-key\t\tLocation of RSA Wrapped key.\n" +
+            "\t--wrapped-key\t\tLocation of AES Wrapped key.\n" +
             "\t--unwrapping-key-handle\tHandle of unwrapping key.\n";
 
     public static void main(String[] args) throws Exception {
