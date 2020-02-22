@@ -49,6 +49,7 @@ public class KeyUtilitiesRunner {
             "Options\n" +
             "\t[--label <key label>] [--handle <numeric key handle>]\n" +
             "\t--get-key\t\tGet information about a key in the HSM\n" +
+            "\t--get-all-keys\t\tGet all keys for the current user\n" +
             "\t--delete-key\t\tDelete a key from the HSM\n" +
             "\t--import-key\t\tGenerates a key locally and imports it into the HSM\n" +
             "\t--import-rsa-pem\t\tRead a PEM file and import the private key\n" +
@@ -57,6 +58,7 @@ public class KeyUtilitiesRunner {
     private enum modes {
         INVALID,
         GET_KEY,
+        GET_ALL_KEYS,
         DELETE_KEY,
         EXPORT_KEY,
         IMPORT_KEY,
@@ -89,6 +91,9 @@ public class KeyUtilitiesRunner {
                 case "--get-key":
                     mode = modes.GET_KEY;
                     break;
+                case "--get-all-keys":
+                    mode = modes.GET_ALL_KEYS;
+                    break;
                 case "--delete-key":
                     mode = modes.DELETE_KEY;
                     break;
@@ -103,6 +108,17 @@ public class KeyUtilitiesRunner {
                     mode = modes.IMPORT_PEM;
                     break;
             }
+        }
+
+        if (mode == modes.GET_ALL_KEYS) {
+            System.out.format("%-12s%-64s%-12s%-12s%-12s%-12s\n\n", "KeyHandle", "Label", "Persistent", 
+                                "Extractable", "Algo", "Size");
+            for(Enumeration<CaviumKey> keys = Util.findAllKeys(label); keys.hasMoreElements();) {
+                CaviumKey k = keys.nextElement();
+                System.out.format("%-12d%-64s%-12s%-12s%-12s%-12s\n", k.getHandle(), k.getLabel(), 
+                                    k.isPersistent(), k.isExtractable(), k.getAlgorithm(), k.getSize());
+            }
+            return;
         }
 
         if (null != label && 0 != handle) {
