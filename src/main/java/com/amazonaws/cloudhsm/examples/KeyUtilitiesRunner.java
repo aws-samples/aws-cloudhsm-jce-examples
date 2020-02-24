@@ -37,6 +37,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Enumeration;
 
 /**
  * This sample demonstrates how to work with keys. This could be importing keys, exporting keys, loading keys by handle,
@@ -64,6 +65,8 @@ public class KeyUtilitiesRunner {
         IMPORT_KEY,
         IMPORT_PEM
     }
+
+    private static String formatStringForKeyDetails = "%-12s%-12s%-12s%-12s%-12s%s\n";
 
     public static void main(String[] args) throws Exception {
         try {
@@ -110,46 +113,37 @@ public class KeyUtilitiesRunner {
             }
         }
 
-        if (mode == modes.GET_ALL_KEYS) {
-            System.out.format("%-12s%-64s%-12s%-12s%-12s%-12s\n\n", "KeyHandle", "Label", "Persistent", 
-                                "Extractable", "Algo", "Size");
-            for(Enumeration<CaviumKey> keys = Util.findAllKeys(label); keys.hasMoreElements();) {
-                CaviumKey k = keys.nextElement();
-                System.out.format("%-12d%-64s%-12s%-12s%-12s%-12s\n", k.getHandle(), k.getLabel(), 
-                                    k.isPersistent(), k.isExtractable(), k.getAlgorithm(), k.getSize());
+        if (mode != modes.GET_ALL_KEYS) {
+            if (null != label && 0 != handle) {
+                System.out.println("Please specify one of key handle or label");
+                help();
+                return;
+            } else if (null == label && 0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
+                System.out.println("Please specify either key handle or label");
+                help();
+                return;
+            } else if (modes.IMPORT_PEM == mode && null == pemFile) {
+                System.out.println("Please specify the PEM file name");
+                help();
+                return;
             }
-            return;
-        }
 
-        if (null != label && 0 != handle) {
-            System.out.println("Please specify one of key handle or label");
-            help();
-            return;
-        } else if (null == label && 0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
-            System.out.println("Please specify either key handle or label");
-            help();
-            return;
-        } else if (modes.IMPORT_PEM == mode && null == pemFile) {
-            System.out.println("Please specify the PEM file name");
-            help();
-            return;
-        }
+            // Using the supplied label, find the associated key handle.
+            // The handle for the *first* key found using the label will be the handle returned.
+            // If multiple keys have the same label, only the first key can be returned.
+            if (0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
+                try {
+                    long[] handles = { 0 };
+                    Util.findKey(label, handles);
+                    handle = handles[0];
+                } catch (CFM2Exception ex) {
+                    if (CFM2Exception.isAuthenticationFailure(ex)) {
+                        System.out.println("Could not find credentials to login to the HSM");
+                        return;
+                    }
 
-        // Using the supplied label, find the associated key handle.
-        // The handle for the *first* key found using the label will be the handle returned.
-        // If multiple keys have the same label, only the first key can be returned.
-        if (0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
-            try {
-                long[] handles = { 0 };
-                Util.findKey(label, handles);
-                handle = handles[0];
-            } catch (CFM2Exception ex) {
-                if (CFM2Exception.isAuthenticationFailure(ex)) {
-                    System.out.println("Could not find credentials to login to the HSM");
-                    return;
+                    throw ex;
                 }
-
-                throw ex;
             }
         }
 
@@ -195,6 +189,16 @@ public class KeyUtilitiesRunner {
                         displayKeyInfo(key);
                     } else {
                         System.out.println("Could not find the given key handle");
+                    }
+                    break;
+                }
+                case GET_ALL_KEYS: {
+                    System.out.format(formatStringForKeyDetails, "KeyHandle", "Persistent",
+                                "Extractable", "Algo", "Size", "Label");
+                    for(Enumeration<CaviumKey> keys = Util.findAllKeys(label); keys.hasMoreElements();) {
+                        CaviumKey k = keys.nextElement();
+                        System.out.format(formatStringForKeyDetails, k.getHandle(), k.isPersistent(),
+                                            k.isExtractable(), k.getAlgorithm(), k.getSize(), k.getLabel());
                     }
                     break;
                 }
