@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -31,7 +31,7 @@ import java.util.Base64;
 import java.util.Arrays;
 
 /**
- * This sample demonstrates how to use AES to wrap and unwrap a key into and out of the HSM.
+ * This sample demonstrates how to use AESWrap to wrap and unwrap a key into and out of the HSM.
  */
 public class AESWrappingRunner {
     public static void main(String[] args) throws Exception {
@@ -45,41 +45,44 @@ public class AESWrappingRunner {
         /* We need an AES key to wrap and unwrap our extractable keys. */
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
         keyGen.init(256);
-        SecretKey wrappingKey = keyGen.generateKey();
+        SecretKey sunJceWrappingKey = keyGen.generateKey();
 
         /* Import this AES key into the HSM so we can wrap in the HSM and unwrap locally */
-        CaviumKey caviumWrappingKey = importWrappingKey(wrappingKey);
-        Util.persistKey(caviumWrappingKey);
+        CaviumKey hsmWrappingKey = importWrappingKey(sunJceWrappingKey);
+        Util.persistKey(hsmWrappingKey);
 
         // Extractable keys must be marked extractable.
         Key extractableKey = generateExtractableKey(256, "Test Extractable Key", false);
-        Key extractableKey2 = generateExtractableKey(192, "Test Extractable Key", false);
-        Key extractableKey3 = generateExtractableKey(128, "Test Extractable Key", false);
 
         try {
-            // Using the Cavium wrapping key, wrap and unwrap the extractable key.
-            wrap(caviumWrappingKey, extractableKey);
 
-            // Demonstrate the extra padding on the wrapped key.
-            // The customer needs to be aware of when moving keys from CloudHSM
-            // to their own crypto environment.
-            paddingDemonstration(caviumWrappingKey, wrappingKey, extractableKey);
-            paddingDemonstration(caviumWrappingKey, wrappingKey, extractableKey2);
-            paddingDemonstration(caviumWrappingKey, wrappingKey, extractableKey3);
+            System.out.printf("\nOriginal key before wrapping:\n %s\n",
+                                Base64.getEncoder().encodeToString(extractableKey.getEncoded()));
+
+            // Example to demonstrate wrap and unwrap with "AESWrap/ECB/NoPadding"
+            wrapWithNoPad(hsmWrappingKey, sunJceWrappingKey, extractableKey);
+
+            // Example to demonstrate wrap and unwrap with "AESWrap/ECB/PKCS5Padding"
+            wrapWithPkcs5Pad(hsmWrappingKey, extractableKey);
+
+            // Example to demonstrate wrap and unwrap with "AESWrap/ECB/ZeroPadding"
+            wrapWithZeroPad(hsmWrappingKey, extractableKey);
 
             // Clean up the keys.
-            Util.deleteKey((CaviumKey) caviumWrappingKey);
+            Util.deleteKey((CaviumKey) hsmWrappingKey);
             Util.deleteKey((CaviumKey) extractableKey);
+
         } catch (CFM2Exception ex) {
             ex.printStackTrace();
-            System.out.printf("Failed to delete key handles: %d\n", ((CaviumKey) wrappingKey).getHandle());
+            System.out.printf("Failed to delete key handles: %d\n", ((CaviumKey) hsmWrappingKey).getHandle());
         }
     }
 
     /**
-     * Using the wrapping key, wrap and unwrap the extractable key.
-     *
+     * The method demonstrates "AESWrap/ECB/NoPadding" by wrapping a key with Cavium provider
+     * and unwrapping the key with SunJCE provider.
      * @param wrappingKey
+     * @param sunJceWrappingKey
      * @param extractableKey
      * @throws InvalidKeyException
      * @throws NoSuchAlgorithmException
@@ -87,29 +90,29 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void wrap(Key wrappingKey, Key extractableKey)
+    private static void wrapWithNoPad(Key hsmWrappingKey, Key sunJceWrappingKey, Key extractableKey)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
-        cipher.init(Cipher.WRAP_MODE, wrappingKey);
+        Cipher cipher = Cipher.getInstance("AESWrap/ECB/NoPadding", "Cavium");
+        cipher.init(Cipher.WRAP_MODE, hsmWrappingKey);
 
-        // Wrap the extractable key using the wrappingKey.
+        // Wrap the extractable key using the wrappingKey
         byte[] wrappedBytes = cipher.wrap(extractableKey);
 
-        // Unwrap the wrapped key using the wrapping key.
-        cipher.init(Cipher.UNWRAP_MODE, wrappingKey);
+        // Unwrap using hsm
+        cipher.init(Cipher.UNWRAP_MODE, hsmWrappingKey);
         Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
-        // Compare the two keys.
+        // Compare original key with HSM unwrapped key
         assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
-        System.out.printf("\nVerified key when using the HSM to wrap and unwrap: %s\n", Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
+        System.out.printf("\nVerified key when using the HSM to wrap and unwrap with AESWrap/ECB/NoPadding:\n %s\n",
+                            Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
+
     }
 
     /**
-     * This method demonstrates the PKCS#5 padding method that is used when wrapping keys through the JCE.
-     * When moving keys between providers it is important to know that this padding exists.
-     * @param caviumWrappingKey
-     * @param localWrappingKey
+     * This method demonstrates "AESWrap/ECB/PKCS5Padding" by wrapping and unwrapping a key using HSM.
+     * @param hsmWrappingKey
      * @param extractableKey
      * @throws InvalidKeyException
      * @throws NoSuchAlgorithmException
@@ -117,29 +120,52 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void paddingDemonstration(CaviumKey caviumWrappingKey, Key localWrappingKey, Key extractableKey)
+    private static void wrapWithPkcs5Pad(Key hsmWrappingKey, Key extractableKey)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "Cavium");
-        cipher.init(Cipher.WRAP_MODE, caviumWrappingKey);
+        Cipher cipher = Cipher.getInstance("AESWrap/ECB/PKCS5Padding", "Cavium");
+        cipher.init(Cipher.WRAP_MODE, hsmWrappingKey);
 
-        // Wrap the extractable key using the wrappingKey.
+        // Wrap the extractable key using the wrappingKey
         byte[] wrappedBytes = cipher.wrap(extractableKey);
 
-        // Create a SunJCE provider to unwrap the key, exposing the PKCS#5 padding.
-        Cipher sunCipher = Cipher.getInstance("AESWrap", "SunJCE");
+        // Unwrap using the HSM
+        cipher.init(Cipher.UNWRAP_MODE, hsmWrappingKey);
+        Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
-        // Unwrap using the SunJCE.
-        sunCipher.init(Cipher.UNWRAP_MODE, localWrappingKey);
-        Key unwrappedExtractableKey = sunCipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
+        // Compare the two keys
+        assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
+        System.out.printf("\nVerified key when using the HSM to wrap and unwrap with AESWrap/ECB/PKCS5Padding:\n %s\n",
+                            Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
+    }
 
-        System.out.printf("\nWhen unwrapping with a different provider (SunJCE here), the unwrapped key still has PKCS#5 padding:\n");
-        byte[] unwrappedBytes = unwrappedExtractableKey.getEncoded();
-        for (int i = 0; i < unwrappedBytes.length; i++) {
-            System.out.printf("%02X", unwrappedBytes[i]);
-        }
+    /**
+     * This method demonstrates "AESWrap/ECB/ZeroPadding" by wrapping and unwrapping a key using HSM.
+     * @param hsmWrappingKey
+     * @param extractableKey
+     * @throws InvalidKeyException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     * @throws NoSuchPaddingException
+     * @throws IllegalBlockSizeException
+     */
+    private static void wrapWithZeroPad(Key hsmWrappingKey, Key extractableKey)
+            throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
-        System.out.printf("\nYou can see the PKCS#5 padding bytes at the end of the unwrapped key. This padding must be stripped befure using the key.\n");
+        Cipher cipher = Cipher.getInstance("AESWrap/ECB/ZeroPadding", "Cavium");
+        cipher.init(Cipher.WRAP_MODE, hsmWrappingKey);
+
+        // Wrap the extractable key using the wrappingKey
+        byte[] wrappedBytes = cipher.wrap(extractableKey);
+
+        // Unwrap using the HSM
+        cipher.init(Cipher.UNWRAP_MODE, hsmWrappingKey);
+        Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
+
+        // Compare the two keys
+        assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
+        System.out.printf("\nVerified key when using the HSM to wrap and unwrap with AESWrap/ECB/ZeroPadding:\n %s\n",
+                            Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
     }
 
     /**

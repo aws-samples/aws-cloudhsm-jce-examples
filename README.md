@@ -11,8 +11,8 @@ This sample code is made available under a modified MIT license. See the LICENSE
 
 ### Dependencies
 
-The CloudHSM Client and JCE dependencies are required. They should be installed using the official
-procedures documented here:
+The latest version of CloudHSM Client and JCE dependencies are required.
+They should be installed using the official procedures documented here:
 
 * https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install.html
 
