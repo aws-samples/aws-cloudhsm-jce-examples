@@ -97,33 +97,22 @@ public class AESWrappingRunner {
         cipher.init(Cipher.WRAP_MODE, hsmWrappingKey);
 
         // Wrap the extractable key using the wrappingKey
-        byte[] hsmWrappedBytes = cipher.wrap(extractableKey);
+        byte[] wrappedBytes = cipher.wrap(extractableKey);
 
-        // Unwrap the wrapped key using the wrapping key
+        // Unwrap using hsm
         cipher.init(Cipher.UNWRAP_MODE, hsmWrappingKey);
-        Key hsmUnwrappedExtractableKey = cipher.unwrap(hsmWrappedBytes, "AES", Cipher.SECRET_KEY);
+        Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
         // Compare original key with HSM unwrapped key
-        assert (Arrays.equals(extractableKey.getEncoded(), hsmUnwrappedExtractableKey.getEncoded()));
+        assert (Arrays.equals(extractableKey.getEncoded(), unwrappedExtractableKey.getEncoded()));
         System.out.printf("\nVerified key when using the HSM to wrap and unwrap with AESWrap/ECB/NoPadding:\n %s\n",
-                            Base64.getEncoder().encodeToString(hsmUnwrappedExtractableKey.getEncoded()));
+                            Base64.getEncoder().encodeToString(unwrappedExtractableKey.getEncoded()));
 
-        // Create a SunJCE provider cipher instance to unwrap the key
-        Cipher sunCipher = Cipher.getInstance("AESWrap", "SunJCE");
-
-        // Unwrap the hsm wrapped key using SunJCE
-        sunCipher.init(Cipher.UNWRAP_MODE, sunJceWrappingKey);
-        Key sunJceUnwrappedExtractableKey = sunCipher.unwrap(hsmWrappedBytes, "AES", Cipher.SECRET_KEY);
-
-        // Compare original key with SunJCE unwrapped key
-        assert (Arrays.equals(extractableKey.getEncoded(), sunJceUnwrappedExtractableKey.getEncoded()));
-        System.out.printf("\nVerified key when using the HSM to wrap and SunJCE to unwrap with AESWrap/ECB/NoPadding:\n %s\n",
-                            Base64.getEncoder().encodeToString(sunJceUnwrappedExtractableKey.getEncoded()));
     }
 
     /**
      * This method demonstrates "AESWrap/ECB/PKCS5Padding" by wrapping and unwrapping a key using HSM.
-     * @param caviumWrappingKey
+     * @param hsmWrappingKey
      * @param extractableKey
      * @throws InvalidKeyException
      * @throws NoSuchAlgorithmException
@@ -131,17 +120,17 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void wrapWithPkcs5Pad(Key caviumWrappingKey, Key extractableKey)
+    private static void wrapWithPkcs5Pad(Key hsmWrappingKey, Key extractableKey)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
         Cipher cipher = Cipher.getInstance("AESWrap/ECB/PKCS5Padding", "Cavium");
-        cipher.init(Cipher.WRAP_MODE, caviumWrappingKey);
+        cipher.init(Cipher.WRAP_MODE, hsmWrappingKey);
 
         // Wrap the extractable key using the wrappingKey
         byte[] wrappedBytes = cipher.wrap(extractableKey);
 
         // Unwrap using the HSM
-        cipher.init(Cipher.UNWRAP_MODE, caviumWrappingKey);
+        cipher.init(Cipher.UNWRAP_MODE, hsmWrappingKey);
         Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
         // Compare the two keys
@@ -152,7 +141,7 @@ public class AESWrappingRunner {
 
     /**
      * This method demonstrates "AESWrap/ECB/ZeroPadding" by wrapping and unwrapping a key using HSM.
-     * @param caviumWrappingKey
+     * @param hsmWrappingKey
      * @param extractableKey
      * @throws InvalidKeyException
      * @throws NoSuchAlgorithmException
@@ -160,17 +149,17 @@ public class AESWrappingRunner {
      * @throws NoSuchPaddingException
      * @throws IllegalBlockSizeException
      */
-    private static void wrapWithZeroPad(Key caviumWrappingKey, Key extractableKey)
+    private static void wrapWithZeroPad(Key hsmWrappingKey, Key extractableKey)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, IllegalBlockSizeException {
 
         Cipher cipher = Cipher.getInstance("AESWrap/ECB/ZeroPadding", "Cavium");
-        cipher.init(Cipher.WRAP_MODE, caviumWrappingKey);
+        cipher.init(Cipher.WRAP_MODE, hsmWrappingKey);
 
         // Wrap the extractable key using the wrappingKey
         byte[] wrappedBytes = cipher.wrap(extractableKey);
 
         // Unwrap using the HSM
-        cipher.init(Cipher.UNWRAP_MODE, caviumWrappingKey);
+        cipher.init(Cipher.UNWRAP_MODE, hsmWrappingKey);
         Key unwrappedExtractableKey = cipher.unwrap(wrappedBytes, "AES", Cipher.SECRET_KEY);
 
         // Compare the two keys
