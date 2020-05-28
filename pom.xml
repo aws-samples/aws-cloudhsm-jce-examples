@@ -19,8 +19,8 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-3.1.0.jar</cloudhsmJarPath>
                 <cloudhsmVersion>3.1.0</cloudhsmVersion>
+                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-${cloudhsmVersion}.jar</cloudhsmJarPath>
             </properties>
         </profile>
     </profiles>
@@ -79,6 +79,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -580,6 +581,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -594,6 +596,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/login-runner.jar</argument>
@@ -611,6 +614,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aesgcm-runner.jar</argument>
@@ -628,6 +632,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aesctr-runner.jar</argument>
@@ -645,6 +650,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/desecb-runner.jar</argument>
@@ -662,6 +668,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aes-wrapping-runner.jar</argument>
@@ -679,6 +686,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aes-gcm-wrapping-runner.jar</argument>
@@ -696,6 +704,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/cbc-runner.jar</argument>
@@ -713,6 +722,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/ecb-runner.jar</argument>
@@ -730,6 +740,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/ecops-runner.jar</argument>
@@ -747,6 +758,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/hmacops-runner.jar</argument>
@@ -764,6 +776,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/keystore-runner.jar</argument>
@@ -781,6 +794,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/cloudhsm-keystore-runner.jar</argument>
@@ -798,6 +812,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/rsaops-runner.jar</argument>
@@ -815,6 +830,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/ecdhops-runner.jar</argument>
@@ -832,6 +848,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/sign-threaded-runner.jar</argument>
@@ -841,7 +858,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>test-rsa-wrap</id>
+                        <id>verify-rsa-wrap</id>
                         <phase>verify</phase>
                         <goals>
                             <goal>exec</goal>
@@ -849,6 +866,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-enableassertions</argument>
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/rsawrap-runner.jar</argument>
@@ -857,11 +875,11 @@
                             </arguments>
                         </configuration>
                     </execution>
-
                 </executions>
             </plugin>
         </plugins>
     </build>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.logging.log4j-core</groupId>
