@@ -579,6 +579,32 @@
                             </filters>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>build-custom-key-attributes</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/custom-key-attributes-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.CustomKeyAttributesRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>custom-key-attributes-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -870,6 +896,24 @@
                                 <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/rsawrap-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-custom-key-attributes</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/custom-key-attributes-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
