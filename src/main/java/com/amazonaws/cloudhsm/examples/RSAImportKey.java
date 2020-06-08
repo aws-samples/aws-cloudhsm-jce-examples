@@ -18,11 +18,12 @@ package com.amazonaws.cloudhsm.examples;
 
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.Util;
-import com.cavium.key.*;
+import com.cavium.key.CaviumAESKey;
+import com.cavium.key.CaviumKey;
+import com.cavium.key.CaviumKeyAttributes;
+import com.cavium.key.CaviumRSAPrivateKey;
+import com.cavium.key.CaviumRSAPublicKey;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +31,9 @@ import java.nio.file.Paths;
 import java.security.Key;
 import java.security.Security;
 import java.security.spec.MGF1ParameterSpec;
+import javax.crypto.Cipher;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
 /**
  * This sample uses RSA OAEP padding to import a wrapped AES key.

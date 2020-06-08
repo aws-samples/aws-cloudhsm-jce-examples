@@ -17,10 +17,13 @@
 package com.amazonaws.cloudhsm.examples;
 
 import java.io.IOException;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.Base64;
 import javax.crypto.Mac;
-
 
 /**
  * Demonstrate basic HMAC operation.
@@ -60,7 +63,7 @@ public class HMACOperationsRunner {
 
         Key key = SymmetricKeys.generateExtractableAESKey(256, "HmacTest");
         String algorithm = "HmacSHA512";
-        
+
         byte[] caviumDigest = digest(plainText.getBytes("UTF-8"), key, algorithm, "Cavium");
         System.out.println("Cavium HMAC= " + Base64.getEncoder().encodeToString(caviumDigest));
 

@@ -16,9 +16,13 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import java.io.UnsupportedEncodingException;
-import java.security.*;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.Base64;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

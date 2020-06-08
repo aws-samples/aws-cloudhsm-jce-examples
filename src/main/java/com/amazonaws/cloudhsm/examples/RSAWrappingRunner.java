@@ -18,18 +18,29 @@ package com.amazonaws.cloudhsm.examples;
 
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.Util;
-import com.cavium.key.*;
+import com.cavium.key.CaviumKey;
+import com.cavium.key.CaviumRSAPrivateKey;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
 
-import javax.crypto.*;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
+import java.security.spec.MGF1ParameterSpec;
+import java.util.Arrays;
+import java.util.Base64;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
-import java.io.IOException;
-import java.security.*;
-import java.security.spec.MGF1ParameterSpec;
-import java.util.Base64;
-import java.util.Arrays;
 
 /**
  * This sample demonstrates how to use RSA to wrap and unwrap a key into and out of the HSM.
@@ -122,7 +133,6 @@ public class RSAWrappingRunner {
 
         // Wrap the extractable key using the wrappingKey.
         byte[] wrappedBytes = cipher.wrap(extractableKey);
-
 
         // Unwrap using the SunJCE.
         Cipher sunCipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", "SunJCE");

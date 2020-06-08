@@ -17,15 +17,19 @@
 package com.amazonaws.cloudhsm.examples;
 
 import java.io.IOException;
-import java.security.*;
-import java.util.Arrays;
-import java.util.List;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.Random;
-import javax.crypto.*;
-
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 /**
- * This sample demonstrates how to encrypt data with DESede ECB. 
+ * This sample demonstrates how to encrypt data with DESede ECB.
  */
 public class DESedeECBEncryptDecryptRunner {
 
@@ -44,7 +48,7 @@ public class DESedeECBEncryptDecryptRunner {
         byte[] plainText = new byte[1024];
         Random r = new Random();
         r.nextBytes(plainText);
-        
+
         // Encrypt the plaintext
         byte[] cipherText = encrypt(key, plainText);
         // Decrypt the ciphertext.
@@ -52,7 +56,6 @@ public class DESedeECBEncryptDecryptRunner {
         assert(java.util.Arrays.equals(plainText, decryptedText));
         System.out.println("Successful decryption");
     }
-
 
     /**
      * Encrypt some plaintext using the DESede ECB cipher mode.
@@ -92,7 +95,7 @@ public class DESedeECBEncryptDecryptRunner {
             e.printStackTrace();
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
-        } 
+        }
         return null;
     }
 }
