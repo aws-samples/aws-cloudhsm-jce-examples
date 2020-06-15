@@ -23,7 +23,21 @@ import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Random;
 
@@ -144,11 +158,9 @@ public class SignThreadedRunner {
             //
             // threads[i] = new Thread(new WrapKeyLoopInefficient(keyStore));
 
-
             // The recommended way to work with keys is by passing key objects. That is because key objects
             // already have metadata loaded, and don't require round trips to the HSM to perform lookups.
             threads[i] = new Thread(new WrapKeyLoop(signingKey));
-
 
             threads[i].start();
         }

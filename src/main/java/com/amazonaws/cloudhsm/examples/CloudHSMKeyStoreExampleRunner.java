@@ -16,32 +16,31 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.key.CaviumKey;
-import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
-import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 import com.cavium.asn1.Encoder;
 import com.cavium.cfm2.Util;
-
-import javax.crypto.KeyGenerator;
+import com.cavium.key.CaviumKey;
+import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
-
+import java.io.FileOutputStream;
 import java.math.BigInteger;
-
-import java.security.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStore.PasswordProtection;
+import java.security.KeyStore.PrivateKeyEntry;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Security;
+import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.KeyStore.PasswordProtection;
-import java.security.KeyStore.PrivateKeyEntry;
-import java.security.KeyStore.Entry;
-
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
@@ -207,73 +206,73 @@ public class CloudHSMKeyStoreExampleRunner {
             (byte) 0x2A, (byte) 0x86, (byte) 0x48, (byte) 0x86, (byte) 0xF7, (byte) 0x0D, (byte) 0x01, (byte) 0x01, (byte) 0x0D };
         String sigAlgoName = "SHA512WithRSA";
 
-         byte[] signatureId = Encoder.encodeSequence(
-                                         Encoder.encodeOid(signatureOid),
-                                         Encoder.encodeNull());
+        byte[] signatureId = Encoder.encodeSequence(
+                                        Encoder.encodeOid(signatureOid),
+                                        Encoder.encodeNull());
 
-         byte[] issuer = Encoder.encodeSequence(
-                                     encodeName(COUNTRY_NAME_OID, "<Country>"),
-                                     encodeName(STATE_OR_PROVINCE_NAME_OID, "<State>"),
-                                     encodeName(LOCALITY_NAME_OID, "<City>"),
-                                     encodeName(ORGANIZATION_NAME_OID, "<Organization>"),
-                                     encodeName(ORGANIZATION_UNIT_OID, "<Unit>"),
-                                     encodeName(COMMON_NAME_OID, "<CN>")
-                                 );
+        byte[] issuer = Encoder.encodeSequence(
+                                    encodeName(COUNTRY_NAME_OID, "<Country>"),
+                                    encodeName(STATE_OR_PROVINCE_NAME_OID, "<State>"),
+                                    encodeName(LOCALITY_NAME_OID, "<City>"),
+                                    encodeName(ORGANIZATION_NAME_OID, "<Organization>"),
+                                    encodeName(ORGANIZATION_UNIT_OID, "<Unit>"),
+                                    encodeName(COMMON_NAME_OID, "<CN>")
+                                );
 
-         Calendar c = Calendar.getInstance();
-         c.add(Calendar.DAY_OF_YEAR, -1);
-         Date notBefore = c.getTime();
-         c.add(Calendar.YEAR, 1);
-         Date notAfter = c.getTime();
-         byte[] validity = Encoder.encodeSequence(
-                                         Encoder.encodeUTCTime(notBefore),
-                                         Encoder.encodeUTCTime(notAfter)
-                                     );
-         byte[] key = publicKey.getEncoded();
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.DAY_OF_YEAR, -1);
+        Date notBefore = c.getTime();
+        c.add(Calendar.YEAR, 1);
+        Date notAfter = c.getTime();
+        byte[] validity = Encoder.encodeSequence(
+                                        Encoder.encodeUTCTime(notBefore),
+                                        Encoder.encodeUTCTime(notAfter)
+                                    );
+        byte[] key = publicKey.getEncoded();
 
-         byte[] certificate = Encoder.encodeSequence(
-                                         version,
-                                         serialNo,
-                                         signatureId,
-                                         issuer,
-                                         validity,
-                                         issuer,
-                                         key);
-         Signature sig;
-         byte[] signature = null;
-         try {
-             sig = Signature.getInstance(sigAlgoName, "Cavium");
-             sig.initSign(privateKey);
-             sig.update(certificate);
-             signature = Encoder.encodeBitstring(sig.sign());
+        byte[] certificate = Encoder.encodeSequence(
+                                        version,
+                                        serialNo,
+                                        signatureId,
+                                        issuer,
+                                        validity,
+                                        issuer,
+                                        key);
+        Signature sig;
+        byte[] signature = null;
+        try {
+            sig = Signature.getInstance(sigAlgoName, "Cavium");
+            sig.initSign(privateKey);
+            sig.update(certificate);
+            signature = Encoder.encodeBitstring(sig.sign());
 
-         } catch (Exception e) {
-             System.err.println(e.getMessage());
-             return null;
-         }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            return null;
+        }
 
-         byte [] x509 = Encoder.encodeSequence(
-                         certificate,
-                         signatureId,
-                         signature
-                         );
-         return cf.generateCertificate(new ByteArrayInputStream(x509));
+        byte [] x509 = Encoder.encodeSequence(
+                        certificate,
+                        signatureId,
+                        signature
+                        );
+        return cf.generateCertificate(new ByteArrayInputStream(x509));
     }
 
-     /**
-      * Simple OID encoder.
-      * Encode a value with OID in ASN.1 format
-      */
-     private static byte[] encodeName(byte[] nameOid, String value) {
-         byte[] name = null;
-         name = Encoder.encodeSet(
-                     Encoder.encodeSequence(
-                             Encoder.encodeOid(nameOid),
-                             Encoder.encodePrintableString(value)
-                     )
-                 );
-         return name;
-     }
+    /**
+     * Simple OID encoder.
+     * Encode a value with OID in ASN.1 format
+     */
+    private static byte[] encodeName(byte[] nameOid, String value) {
+        byte[] name = null;
+        name = Encoder.encodeSet(
+                    Encoder.encodeSequence(
+                            Encoder.encodeOid(nameOid),
+                            Encoder.encodePrintableString(value)
+                    )
+                );
+        return name;
+    }
 
     /**
      * List all the keys in the keystore.
@@ -293,5 +292,4 @@ public class CloudHSMKeyStoreExampleRunner {
             System.out.println(entry.nextElement());
         }
     }
-
 }

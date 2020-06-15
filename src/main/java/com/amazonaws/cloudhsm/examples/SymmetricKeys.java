@@ -18,13 +18,13 @@ package com.amazonaws.cloudhsm.examples;
 
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 import com.cavium.key.parameter.CaviumDESKeyGenParameterSpec;
+
 import java.security.InvalidAlgorithmParameterException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-
 
 /**
  * Symmetric key generation examples.

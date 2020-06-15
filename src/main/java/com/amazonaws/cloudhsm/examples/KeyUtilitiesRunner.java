@@ -19,25 +19,37 @@ package com.amazonaws.cloudhsm.examples;
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.ImportKey;
 import com.cavium.cfm2.Util;
-import com.cavium.key.*;
-import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
+import com.cavium.key.CaviumAESKey;
+import com.cavium.key.CaviumECPrivateKey;
+import com.cavium.key.CaviumECPublicKey;
+import com.cavium.key.CaviumKey;
+import com.cavium.key.CaviumKeyAttributes;
+import com.cavium.key.CaviumRSAPrivateKey;
+import com.cavium.key.CaviumRSAPublicKey;
 import com.cavium.key.parameter.CaviumECGenParameterSpec;
+import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.*;
-import java.security.interfaces.RSAPrivateKey;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Enumeration;
+import javax.crypto.BadPaddingException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * This sample demonstrates how to work with keys. This could be importing keys, exporting keys, loading keys by handle,

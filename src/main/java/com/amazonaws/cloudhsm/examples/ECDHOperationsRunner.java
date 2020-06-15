@@ -14,7 +14,6 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 package com.amazonaws.cloudhsm.examples;
 
 import java.io.IOException;
@@ -24,7 +23,6 @@ import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 import java.util.Base64;
-
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -58,7 +56,6 @@ public class ECDHOperationsRunner {
         KeyPairGenerator keyPairGenB = KeyPairGenerator.getInstance("EC", "SunEC");
         keyPairGenB.initialize(new ECGenParameterSpec(CURVE_ID)); //We need to use the same Curve on both the sides.
         KeyPair keyPairB = keyPairGenB.generateKeyPair();
-
 
         //Each side computes the shared key using its own private key and public key from the other side
 

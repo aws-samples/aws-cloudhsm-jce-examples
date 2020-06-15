@@ -16,8 +16,8 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 import com.cavium.key.parameter.CaviumECGenParameterSpec;
+import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;

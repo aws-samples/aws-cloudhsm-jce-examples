@@ -19,9 +19,14 @@ package com.amazonaws.cloudhsm.examples;
 import com.cavium.key.CaviumKey;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 
-import javax.crypto.KeyGenerator;
-import java.security.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.Enumeration;
+import javax.crypto.KeyGenerator;
 
 /**
  * KeyStoreExampleRunner demonstrates how to enumerate through the KeyStore, and how to find a specific key by label.
@@ -50,7 +55,6 @@ public class KeyStoreExampleRunner {
 
         String keyLabel = "Test KeyStoreLabel";
         generateAesKey(keyLabel);
-
 
         if (keyStore.containsAlias(keyLabel)) {
             // If using implicit credentials, the getKeyByHandle() method will kickoff the first authentication attempt.

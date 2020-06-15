@@ -17,17 +17,21 @@
 package com.amazonaws.cloudhsm.examples;
 
 import java.io.IOException;
-import java.security.*;
-import java.util.Arrays;
-import java.util.List;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.Random;
-import javax.crypto.*;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 
-
-
 /**
- * This sample demonstrates how to encrypt data with AES CTR. 
+ * This sample demonstrates how to encrypt data with AES CTR.
  */
 public class AESCTREncryptDecryptRunner {
 
@@ -54,7 +58,7 @@ public class AESCTREncryptDecryptRunner {
         byte[] ivBytes = new byte[16];
         System.arraycopy(nonce, 0, ivBytes, 0, nonce.length);
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
-        
+
         byte[] cipherText = encrypt(key, plainText, ivSpec);
 
         // Decrypt the ciphertext.
@@ -62,7 +66,6 @@ public class AESCTREncryptDecryptRunner {
         assert(java.util.Arrays.equals(plainText, decryptedText));
         System.out.println("Successful decryption");
     }
-
 
     /**
      * Encrypt some plaintext using the CTR cipher mode.

@@ -17,13 +17,19 @@
 package com.amazonaws.cloudhsm.examples;
 
 import java.io.IOException;
-import java.security.*;
-
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
-import javax.crypto.*;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 
 /**
@@ -43,12 +49,10 @@ public class AESGCMEncryptDecryptRunner {
         // Generate a new AES Key to use for encryption.
         Key key = SymmetricKeys.generateAESKey(256, "AesGcmTest");
 
-
         // Generate some random data to encrypt
         byte[] plainText = new byte[1024];
         Random r = new Random();
         r.nextBytes(plainText);
-
 
         // Encrypt the plaintext with authenticated data.
         String aad = "16 bytes of data";
@@ -69,7 +73,6 @@ public class AESGCMEncryptDecryptRunner {
         assert(java.util.Arrays.equals(plainText, decryptedText));
         System.out.println("Successful decryption");
     }
-
 
     /**
      * Encrypt some plaintext and authentication data using the GCM cipher mode.
