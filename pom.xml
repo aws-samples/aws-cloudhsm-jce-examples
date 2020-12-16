@@ -19,7 +19,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmVersion>3.1.2</cloudhsmVersion>
+                <cloudhsmVersion>3.2.1</cloudhsmVersion>
                 <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-${cloudhsmVersion}.jar</cloudhsmJarPath>
             </properties>
         </profile>
@@ -39,7 +39,7 @@
                         </goals>
                         <phase>validate</phase>
                         <configuration>
-                            <groupId>org.apache.logging.log4j-core</groupId>
+                            <groupId>org.apache.logging.log4j</groupId>
                             <artifactId>log4j-core</artifactId>
                             <version>2.13.3</version>
                             <packaging>jar</packaging>
@@ -54,7 +54,7 @@
                         </goals>
                         <phase>validate</phase>
                         <configuration>
-                            <groupId>org.apache.logging.log4j-api</groupId>
+                            <groupId>org.apache.logging.log4j</groupId>
                             <artifactId>log4j-api</artifactId>
                             <version>2.13.3</version>
                             <packaging>jar</packaging>
@@ -926,12 +926,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.logging.log4j-core</groupId>
+            <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.13.3</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.logging.log4j-api</groupId>
+            <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>2.13.3</version>
         </dependency>
@@ -939,6 +939,8 @@
             <groupId>com.cavium</groupId>
             <artifactId>cloudhsm</artifactId>
             <version>${cloudhsmVersion}</version>
+            <scope>system</scope>
+            <systemPath>/opt/cloudhsm/java/cloudhsm-${cloudhsmVersion}.jar</systemPath>
         </dependency>
     </dependencies>
 </project>
