@@ -19,7 +19,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmVersion>3.1.2</cloudhsmVersion>
+                <cloudhsmVersion>3.4.0</cloudhsmVersion>
                 <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-${cloudhsmVersion}.jar</cloudhsmJarPath>
             </properties>
         </profile>
