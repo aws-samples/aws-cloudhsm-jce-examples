@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,40 +16,37 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.cfm2.CFM2Exception;
-import com.cavium.cfm2.ImportKey;
-import com.cavium.cfm2.Util;
-import com.cavium.key.CaviumAESKey;
-import com.cavium.key.CaviumECPrivateKey;
-import com.cavium.key.CaviumECPublicKey;
-import com.cavium.key.CaviumKey;
-import com.cavium.key.CaviumKeyAttributes;
-import com.cavium.key.CaviumRSAPrivateKey;
-import com.cavium.key.CaviumRSAPublicKey;
-import com.cavium.key.parameter.CaviumECGenParameterSpec;
-import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
-
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import com.amazonaws.cloudhsm.jce.provider.KeyStoreWithAttributes;
+import com.amazonaws.cloudhsm.jce.jni.exception.AddAttributeException;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMap;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMapBuilder;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyType;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
-import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.Security;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.Enumeration;
-import javax.crypto.BadPaddingException;
 import javax.crypto.KeyGenerator;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.security.auth.DestroyFailedException;
+import javax.security.auth.Destroyable;
 
 /**
  * This sample demonstrates how to work with keys. This could be importing keys, exporting keys, loading keys by handle,
@@ -60,20 +57,17 @@ public class KeyUtilitiesRunner {
             "This sample demonstrates the different utility methods for working with keys in the HSM.\n" +
             "\n" +
             "Options\n" +
-            "\t[--label <key label>] [--handle <numeric key handle>]\n" +
+            "\t[--label <key label>]\n" +
+            "\t[--keytype\t\t\tSelect a keytype from {AES, DESEDE, EC, GENERIC_SECRET, RSA}]\n" +
             "\t--get-key\t\tGet information about a key in the HSM\n" +
-            "\t--get-all-keys\t\tGet all keys for the current user\n" +
             "\t--delete-key\t\tDelete a key from the HSM\n" +
             "\t--import-key\t\tGenerates a key locally and imports it into the HSM\n" +
-            "\t--import-rsa-pem\t\tRead a PEM file and import the private key\n" +
-            "\t--export-key\t\tExport the bytes from a key in the HSM\n\n";
+            "\t--import-rsa-pem\t\tRead a PEM file and import the private key\n\n";
 
     private enum modes {
         INVALID,
         GET_KEY,
-        GET_ALL_KEYS,
         DELETE_KEY,
-        EXPORT_KEY,
         IMPORT_KEY,
         IMPORT_PEM
     }
@@ -82,15 +76,17 @@ public class KeyUtilitiesRunner {
 
     public static void main(String[] args) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
         }
 
         String label = null;
+        String keyTypeString = null;
         String pemFile = null;
-        long handle = 0;
         modes mode = modes.INVALID;
 
         for (int i = 0; i < args.length; i++) {
@@ -100,20 +96,14 @@ public class KeyUtilitiesRunner {
                     label = args[++i];
                     System.out.println(label);
                     break;
-                case "--handle":
-                    handle = Integer.valueOf(args[++i]);
+                case "--keytype":
+                    keyTypeString = args[++i];
                     break;
                 case "--get-key":
                     mode = modes.GET_KEY;
                     break;
-                case "--get-all-keys":
-                    mode = modes.GET_ALL_KEYS;
-                    break;
                 case "--delete-key":
                     mode = modes.DELETE_KEY;
-                    break;
-                case "--export-key":
-                    mode = modes.EXPORT_KEY;
                     break;
                 case "--import-key":
                     mode = modes.IMPORT_KEY;
@@ -124,109 +114,70 @@ public class KeyUtilitiesRunner {
                     break;
             }
         }
-
-        if (mode != modes.GET_ALL_KEYS) {
-            if (null != label && 0 != handle) {
-                System.out.println("Please specify one of key handle or label");
-                help();
-                return;
-            } else if (null == label && 0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
-                System.out.println("Please specify either key handle or label");
-                help();
-                return;
-            } else if (modes.IMPORT_PEM == mode && null == pemFile) {
-                System.out.println("Please specify the PEM file name");
-                help();
-                return;
-            }
-
-            // Using the supplied label, find the associated key handle.
-            // The handle for the *first* key found using the label will be the handle returned.
-            // If multiple keys have the same label, only the first key can be returned.
-            if (0 == handle && modes.IMPORT_KEY != mode && modes.IMPORT_PEM != mode) {
-                try {
-                    long[] handles = { 0 };
-                    Util.findKey(label, handles);
-                    handle = handles[0];
-                } catch (CFM2Exception ex) {
-                    if (CFM2Exception.isAuthenticationFailure(ex)) {
-                        System.out.println("Could not find credentials to login to the HSM");
-                        return;
-                    }
-
-                    throw ex;
-                }
+        KeyType keyType = null;
+        if (keyTypeString !=null) {
+            switch (keyTypeString) {
+                case "AES":
+                    keyType = KeyType.AES;
+                    break;
+                case "DESEDE":
+                    keyType = KeyType.DESEDE;
+                    break;
+                case "EC":
+                    keyType = KeyType.EC;
+                    break;
+                case "GENERIC_SECRET":
+                    keyType = KeyType.GENERIC_SECRET;
+                    break;
+                case "RSA":
+                    keyType = KeyType.RSA;
+                    break;
+                default:
+                    System.out.println("Invalid Key Type. Please use the correct key type\n");
+                    help();
+                    return;
             }
         }
-
-        try {
-            switch (mode) {
-                case IMPORT_PEM: {
-                    Path path = Paths.get(pemFile);
-                    byte[] pem = Files.readAllBytes(path);
-                    Key privKey = readPem(pem);
-                    Key importedKey = importKey(privKey, "RSA Import PEM Test", false, false);
-                    displayKeyInfo((CaviumKey) importedKey);
-                    break;
-                }
-                case IMPORT_KEY: {
-                    // Generate a 256-bit AES symmetric key.
-                    // This key is not yet in the HSM. It will have to be imported using a CaviumKeySpec.
-                    KeyGenerator kg = KeyGenerator.getInstance("AES");
-                    kg.init(256);
-                    Key keyToBeImported = kg.generateKey();
-
-                    // Import the key as a session key that is extractable.
-                    // You can use the key handle to identify the key in other operations.
-                    Key importedKey = importKey(keyToBeImported, "Test", false, false);
-                    displayKeyInfo((CaviumKey) importedKey);
-
-                    // Generate an extractable session EC keypair and import the private key.
-                    KeyPair ecPair = new AsymmetricKeys().generateECKeyPairWithParams(CaviumECGenParameterSpec.PRIME256V1, "ectest", true, false);
-                    Key k = exportKey(((CaviumKey)ecPair.getPrivate()).getHandle());
-                    importedKey = importKey(k, "EC Import Test", false, false);
-                    displayKeyInfo((CaviumKey) importedKey);
-
-                    // Generate an extractable session RSA keypair and import the private key.
-                    KeyPair rsaPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, "rsatest", true, false);
-                    k = exportKey(((CaviumKey)rsaPair.getPrivate()).getHandle());
-                    importedKey = importKey(k, "RSA Import Test", false, false);
-                    displayKeyInfo((CaviumKey) importedKey);
-
-                    break;
-                }
-                case GET_KEY: {
-                    CaviumKey key = getKeyByHandle(handle);
-                    if (null != key) {
-                        displayKeyInfo(key);
-                    } else {
-                        System.out.println("Could not find the given key handle");
-                    }
-                    break;
-                }
-                case GET_ALL_KEYS: {
-                    System.out.format(formatStringForKeyDetails, "KeyHandle", "Persistent",
-                                "Extractable", "Algo", "Size", "Label");
-                    for(Enumeration<CaviumKey> keys = Util.findAllKeys(label); keys.hasMoreElements();) {
-                        CaviumKey k = keys.nextElement();
-                        System.out.format(formatStringForKeyDetails, k.getHandle(), k.isPersistent(),
-                                            k.isExtractable(), k.getAlgorithm(), k.getSize(), k.getLabel());
-                    }
-                    break;
-                }
-                case DELETE_KEY: {
-                    deleteKey(handle);
-                    break;
-                }
-                case EXPORT_KEY: {
-                    Key key = exportKey(handle);
-                    if (null != key) {
-                        System.out.println("Base64 wrapped key bytes = " + Base64.getEncoder().encodeToString(key.getEncoded()));
-                    }
-                }
+        switch (mode) {
+            case IMPORT_PEM: {
+                Path path = Paths.get(pemFile);
+                byte[] pem = Files.readAllBytes(path);
+                Key privKey = readPem(pem);
+                importRsaKey(privKey, "RSA Import PEM Test");
+                break;
             }
-        } catch (CFM2Exception ex) {
-            ex.printStackTrace();
+            case IMPORT_KEY: {
+                // Generate a 256-bit AES symmetric key.
+                // This key is not yet in the HSM. It will have to be imported using a KeyAttributesMap.
+                KeyGenerator kg = KeyGenerator.getInstance("AES");
+                kg.init(256);
+                Key keyToBeImported = kg.generateKey();
+
+                // Import the key as an ephemeral key.
+                // You can use the key label to identify the key in other operations.
+                importAesKey(keyToBeImported, "Test");
+                break;
+            }
+            case GET_KEY: {
+                Key key = null;
+                if (keyType == null) {
+                    // We only have label to find a key
+                    key = getKeyByLabel(label);
+                } else {
+                    // We have additional attributes which we can use to find a key
+                    key = getKeyByUsingAttributesMap(label, keyType);
+                }
+                if (null != key) {
+                    System.out.println("Fetched key with label: " + label);
+                } else {
+                    System.out.println("Could not find the given key label " + label);
+                }
+                break;
+            }
+            case DELETE_KEY: {
+                deleteKey(label);
+                break;
+            }
         }
     }
 
@@ -235,113 +186,117 @@ public class KeyUtilitiesRunner {
     }
 
     /**
-     * Get an existing key from the HSM using a key handle.
-     * @param handle The key handle in the HSM.
-     * @return CaviumKey object
-     */
-    private static CaviumKey getKeyByHandle(long handle) throws CFM2Exception {
-        // There is no direct method to load a key, but there is a method to load key attributes.
-        // Using the key attributes and the handle, a new CaviumKey object can be created. This method shows
-        // how to create a specific key type based on the attributes.
-        byte[] keyAttribute = Util.getKeyAttributes(handle);
-        CaviumKeyAttributes cka = new CaviumKeyAttributes(keyAttribute);
-
-        if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_AES) {
-            CaviumAESKey aesKey = new CaviumAESKey(handle, cka);
-            return aesKey;
-        }
-        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_RSA && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PRIVATE_KEY) {
-            CaviumRSAPrivateKey privKey = new CaviumRSAPrivateKey(handle, cka);
-            return privKey;
-        }
-        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_RSA && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
-            CaviumRSAPublicKey pubKey = new CaviumRSAPublicKey(handle, cka);
-            return pubKey;
-        }
-        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PRIVATE_KEY) {
-            CaviumECPrivateKey privKey = new CaviumECPrivateKey(handle, cka);
-            return privKey;
-        }
-        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
-            CaviumECPublicKey pubKey = new CaviumECPublicKey(handle, cka);
-            return pubKey;
-        }
-        else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_GENERIC_SECRET) {
-            CaviumKey key = new CaviumAESKey(handle, cka);
-            return key;
-        }
-
-        return null;
-    }
-
-    /**
-     * Delete a key by handle.
-     * The Util.deleteKey method takes a CaviumKey object, so we have to lookup the key handle before deletion.
-     * @param handle The key handle in the HSM.
-     */
-    private static void deleteKey(long handle) throws CFM2Exception {
-        CaviumKey ck = getKeyByHandle(handle);
-        Util.deleteKey(ck);
-    }
-
-    /**
-     * Export an existing persisted key.
-     * @param handle The key handle in the HSM.
+     * Get an existing key from the HSM using a key label.
+     * @param label The key label in the HSM.
      * @return Key object
      */
-    private static Key exportKey(long handle) {
+    private static Key getKeyByLabel(String label)
+        throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException,
+        UnrecoverableKeyException {
+        KeyStore keystore = KeyStore.getInstance(CloudHsmProvider.PROVIDER_NAME);
+        keystore.load(null, null);
+        return keystore.getKey(label, null);
+    }
+
+    /**
+     * Get an existing key from the HSM using a key label and some extra attributes.
+     * @param label The key label in the HSM.
+     * @return Key object
+     */
+    private static Key getKeyByUsingAttributesMap(String label, KeyType keyType)
+        throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException,
+        UnrecoverableKeyException, AddAttributeException, InvalidKeySpecException {
+        KeyAttributesMap findSpec = new KeyAttributesMap();
+        findSpec.put(KeyAttribute.LABEL, label);
+        if (keyType !=null) {
+            findSpec.put(KeyAttribute.KEY_TYPE, keyType);
+        }
+        // You could also use additional attributes such as ObjectClassType, key size, etc. to filter
+        // even further.
+        KeyStoreWithAttributes keyStore = KeyStoreWithAttributes.getInstance("CloudHSM");
+        /**
+         * We will load an empty keystore here as we just want to find a key on the HSM.
+         * But we could also use local keystore file and use this keystore as a regular
+         * keystore as well.
+         */
+        keyStore.load(null, null);
+        return keyStore.getKey(findSpec);
+    }
+
+    /**
+     * Delete a key by label.
+     * @param label The key label in the HSM.
+     */
+    private static void deleteKey(String label)
+        throws UnrecoverableKeyException, CertificateException, IOException,
+        NoSuchAlgorithmException, KeyStoreException, DestroyFailedException {
+        Key keyToBeDeleted = getKeyByLabel(label);
+        ((Destroyable) keyToBeDeleted).destroy();
+    }
+
+    /**
+     * Import a RSA key into the HSM.
+     * @param key Key object.
+     * @param keyLabel Label to store with the key.
+     */
+    private static Key importRsaKey(Key key, String keyLabel)
+        throws AddAttributeException {
+        if (!(key instanceof RSAPrivateCrtKey)) {
+            return null;
+        }
+        // Create a new key spec to identify the key and specify a label.
+        RSAPrivateCrtKey rsaKey = (RSAPrivateCrtKey) key;
+        // Add key data for the key to be imported
+        KeyAttributesMap keySpec = new KeyAttributesMapBuilder()
+            .put(KeyAttribute.MODULUS, rsaKey.getModulus().toByteArray())
+            .put(KeyAttribute.PUBLIC_EXPONENT, rsaKey.getPublicExponent().toByteArray())
+            .put(KeyAttribute.PRIME_P, rsaKey.getPrimeP().toByteArray())
+            .put(KeyAttribute.PRIME_Q, rsaKey.getPrimeQ().toByteArray())
+            .put(KeyAttribute.PRIME_EXPONENT_P, rsaKey.getPrimeExponentP().toByteArray())
+            .put(KeyAttribute.PRIME_EXPONENT_Q, rsaKey.getPrimeExponentQ().toByteArray())
+            .put(KeyAttribute.CRT_COEFFICIENT, rsaKey.getCrtCoefficient().toByteArray())
+            .build();
+
+        // Add additional key related attributes
+        keySpec.put(KeyAttribute.LABEL, keyLabel);
+
         try {
-            byte[] keyAttribute = Util.getKeyAttributes(handle);
-            CaviumKeyAttributes cka = new CaviumKeyAttributes(keyAttribute);
-            System.out.println(cka.isExtractable());
-            byte[] encoded = Util.exportKey( handle);
-            if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_AES) {
-                Key aesKey = new SecretKeySpec(encoded, 0, encoded.length, "AES");
-                return aesKey;
-            }
-            else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_RSA && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PRIVATE_KEY) {
-                PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(encoded));
-                return privateKey;
-            }
-            else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_RSA && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
-                PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(encoded));
-                return publicKey;
-            } else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PRIVATE_KEY) {
-                PrivateKey privateKey = KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(encoded));
-                return privateKey;
-            }
-            else if(cka.getKeyType() == CaviumKeyAttributes.KEY_TYPE_EC && cka.getKeyClass() == CaviumKeyAttributes.CLASS_PUBLIC_KEY) {
-                PublicKey publicKey = KeyFactory.getInstance("EC").generatePublic(new X509EncodedKeySpec(encoded));
-                return publicKey;
-            }
-        } catch (BadPaddingException | CFM2Exception e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA", CloudHsmProvider.PROVIDER_NAME);
+            PrivateKey importedKey = keyFactory.generatePrivate(keySpec);
+            return importedKey;
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException | NoSuchProviderException e) {
             e.printStackTrace();
         }
         return null;
     }
 
     /**
-     * Import a key into the HSM.
+     * Import an AES key into the HSM.
      * @param key Key object.
      * @param keyLabel Label to store with the key.
-     * @param isExtractable Whether this key can be extracted later.
-     * @param isPersistent Whether this key will persist beyond the current session.
      */
-    private static Key importKey(Key key, String keyLabel, boolean isExtractable, boolean isPersistent) {
-        // Create a new key parameter spec to identify the key. Specify a label
-        // and Boolean values for extractable and persistent.
-        CaviumKeyGenAlgorithmParameterSpec spec = new CaviumKeyGenAlgorithmParameterSpec(keyLabel, isExtractable, isPersistent);
+    private static Key importAesKey(Key key, String keyLabel)
+        throws AddAttributeException {
+        if (!(key instanceof SecretKey)) {
+            return null;
+        }
+        // Create a new key spec to identify the key and specify a label
+        SecretKey aesKey = (SecretKey) key;
+        // Add key data for the key to be imported
+        KeyAttributesMap keySpec = new KeyAttributesMapBuilder()
+            .put(KeyAttribute.VALUE, aesKey.getEncoded())
+            .build();
+
+        // Add additional key related attributes
+        keySpec.put(KeyAttribute.LABEL, keyLabel);
+
         try {
-            Key importedKey = ImportKey.importKey(key, spec);
+            SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("AES", CloudHsmProvider.PROVIDER_NAME);
+            SecretKey importedKey = keyFactory.generateSecret(keySpec);
             return importedKey;
-        } catch (InvalidKeyException e) {
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException | NoSuchProviderException e) {
             e.printStackTrace();
         }
-
         return null;
     }
 
@@ -355,7 +310,7 @@ public class KeyUtilitiesRunner {
      * @throws InvalidKeySpecException
      * @throws UnsupportedEncodingException
      */
-    private static Key readPem(byte[] pem) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException {
+    private static Key readPem(byte[] pem) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         String privateKeyPEM = new String(pem, "ASCII");
         privateKeyPEM = privateKeyPEM.replaceAll("^-----BEGIN .* KEY-----\n", "");
         privateKeyPEM = privateKeyPEM.replaceAll("-----END .* KEY-----$", "");
@@ -368,20 +323,5 @@ public class KeyUtilitiesRunner {
             System.out.printf("Exception while creating KeySpec. Is your key stored in PKCS#8 format?\n\n");
         }
         return null;
-    }
-
-    private static void displayKeyInfo(CaviumKey key) {
-        if (null != key) {
-            System.out.printf("Key handle %d with label %s\n", key.getHandle(), key.getLabel());
-            // Display whether the key can be extracted from the HSM.
-            System.out.println("Is Key Extractable? : " + key.isExtractable());
-
-            // Display whether this key is a token key.
-            System.out.println("Is Key Persistent? : " + key.isPersistent());
-
-            // The algorithm and size used to generate this key.
-            System.out.println("Key Algo : " + key.getAlgorithm());
-            System.out.println("Key Size : " + key.getSize());
-        }
     }
 }

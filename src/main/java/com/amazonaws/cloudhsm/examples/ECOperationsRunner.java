@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,7 +16,8 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.key.parameter.CaviumECGenParameterSpec;
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import com.amazonaws.cloudhsm.jce.provider.attributes.EcParams;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -50,7 +51,7 @@ public class ECOperationsRunner {
      */
     public static byte[] sign(byte[] message, PrivateKey key, String signingAlgorithm)
             throws SignatureException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
-        Signature sig = Signature.getInstance(signingAlgorithm, "Cavium");
+        Signature sig = Signature.getInstance(signingAlgorithm, CloudHsmProvider.PROVIDER_NAME);
         sig.initSign(key);
         sig.update(message);
         return sig.sign();
@@ -72,7 +73,7 @@ public class ECOperationsRunner {
      */
     public static boolean verify(byte[] message, byte[] signature, PublicKey publicKey, String signingAlgorithm)
             throws SignatureException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
-        Signature sig = Signature.getInstance(signingAlgorithm, "Cavium");
+        Signature sig = Signature.getInstance(signingAlgorithm, CloudHsmProvider.PROVIDER_NAME);
         sig.initVerify(publicKey);
         sig.update(message);
         return sig.verify(signature);
@@ -80,7 +81,9 @@ public class ECOperationsRunner {
 
     public static void main(final String[] args) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
@@ -89,7 +92,7 @@ public class ECOperationsRunner {
         String plainText = "This is a sample Plain Text Message!";
 
         // Use the SECP256k1 curve to sign and verify.
-        KeyPair kp = new AsymmetricKeys().generateECKeyPair(CaviumECGenParameterSpec.K256, "ectest");
+        KeyPair kp = new AsymmetricKeys().generateECKeyPair(EcParams.EC_CURVE_PRIME256, "ectest");
         String signingAlgorithm = "SHA512withECDSA";
         byte[] signature = sign(plainText.getBytes("UTF-8"), kp.getPrivate(), signingAlgorithm);
         System.out.println("Plaintext signature = " + Base64.getEncoder().encodeToString(signature));

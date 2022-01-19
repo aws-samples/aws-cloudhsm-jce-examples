@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,6 +16,7 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
@@ -40,7 +41,9 @@ public class CBCEncryptDecryptRunner {
 
     public static void main(final String[] args) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
@@ -88,14 +91,14 @@ public class CBCEncryptDecryptRunner {
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
         // Encrypt the string and display the base64 cipher text
-        Cipher encryptCipher = Cipher.getInstance(transformation, "Cavium");
+        Cipher encryptCipher = Cipher.getInstance(transformation, CloudHsmProvider.PROVIDER_NAME);
         encryptCipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
         byte[] cipherText = encryptCipher.doFinal(plainText.getBytes("UTF-8"));
 
         System.out.println("Base64 cipher text = " + Base64.getEncoder().encodeToString(cipherText));
 
         // Decrypt the cipher text and display the original string
-        Cipher decryptCipher = Cipher.getInstance(transformation, "Cavium");
+        Cipher decryptCipher = Cipher.getInstance(transformation, CloudHsmProvider.PROVIDER_NAME);
         decryptCipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
         byte[] decryptedText = decryptCipher.doFinal(cipherText);
 
@@ -115,7 +118,7 @@ public class CBCEncryptDecryptRunner {
             throws NoSuchAlgorithmException, NoSuchProviderException {
         SecureRandom sr;
 
-        sr = SecureRandom.getInstance("AES-CTR-DRBG", "Cavium");
+        sr = SecureRandom.getInstance("AES-CTR-DRBG", CloudHsmProvider.PROVIDER_NAME);
         byte[] iv = new byte[ivSizeinBytes];
         sr.nextBytes(iv);
         return iv;

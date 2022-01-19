@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,8 +16,13 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.key.parameter.CaviumECGenParameterSpec;
-import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMap;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyPairAttributesMap;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyPairAttributesMapBuilder;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMapBuilder;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
+import com.amazonaws.cloudhsm.jce.jni.exception.AddAttributeException;
 
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -34,36 +39,39 @@ public class AsymmetricKeys {
      * Generate an EC key pair using the given curve.
      * The label passed will be appended with ":public" and ":private" for the respective keys.
      * Supported curves are documented here: https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-lib-supported.html
-     * Curve names are
-     *     CaviumECGenParameterSpec.PRIME256V1 = "prime256v1";
-     *     CaviumECGenParameterSpec.PRIME256 = "secp256r1";
-     *     CaviumECGenParameterSpec.PRIME384 = "secp384r1";
-     * @param curveName
+     * Curve params list:
+     *     EcParams.EC_CURVE_PRIME256;
+     *     EcParams.EC_CURVE_PRIME384;
+     *     EcParams.EC_CURVE_SECP256;
+     * @param curveParams
      * @param label
      * @return
      * @throws InvalidAlgorithmParameterException
      * @throws NoSuchAlgorithmException
      * @throws NoSuchProviderException
      */
-    public KeyPair generateECKeyPair(String curveName, String label)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        boolean isExtractable = false;
-        boolean isPersistent = false;
+    public KeyPair generateECKeyPair(byte[] curveParams, String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
+            AddAttributeException {
 
-        return generateECKeyPairWithParams(curveName, label, isExtractable, isPersistent);
-    }
+        final KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("EC", CloudHsmProvider.PROVIDER_NAME);
 
-    public KeyPair generateECKeyPairWithParams(String curveName, String label, boolean isExtractable, boolean isPersistent)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        // Set attributes for EC public key
+        final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
+        publicKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Public");
+        publicKeyAttrsMap.put(KeyAttribute.EC_PARAMS, curveParams);
 
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("EC", "Cavium");
-        keyPairGen.initialize(
-                new CaviumECGenParameterSpec(
-                        curveName,
-                        label + ":public",
-                        label + ":private",
-                        isExtractable,
-                        isPersistent));
+        // Set attributes for EC private key
+        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMapBuilder()
+                .put(KeyAttribute.LABEL, label + ":Private")
+                .build();
+
+        // Create KeyPairAttributesMap and use that to initialize the keyPair generator
+        KeyPairAttributesMap keyPairSpec = new KeyPairAttributesMapBuilder()
+                        .withPublic(publicKeyAttrsMap)
+                        .withPrivate(privateKeyAttrsMap)
+                        .build();
+        keyPairGen.initialize(keyPairSpec);
 
         return keyPairGen.generateKeyPair();
     }
@@ -79,20 +87,29 @@ public class AsymmetricKeys {
      * @throws NoSuchProviderException
      */
     public KeyPair generateRSAKeyPair(int keySizeInBits, String label)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        boolean isExtractable = false;
-        boolean isPersistent = false;
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
+            AddAttributeException {
 
-        return generateRSAKeyPairWithParams(keySizeInBits, label, isExtractable, isPersistent);
-    }
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", CloudHsmProvider.PROVIDER_NAME);
 
-    public KeyPair generateRSAKeyPairWithParams(int keySizeInBits, String label, boolean isExtractable, boolean isPersistent)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        // Set attributes for RSA public key
+        final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
+        publicKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Public");
+        publicKeyAttrsMap.put(KeyAttribute.MODULUS_BITS, keySizeInBits);
+        publicKeyAttrsMap.put(KeyAttribute.PUBLIC_EXPONENT, new BigInteger("65537").toByteArray());
 
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("rsa", "Cavium");;
-        CaviumRSAKeyGenParameterSpec spec = new CaviumRSAKeyGenParameterSpec(keySizeInBits, new BigInteger("65537"), label + ":public", label + ":private", isExtractable, isPersistent);
+        // Set attributes for RSA private key
+        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMapBuilder()
+                .put(KeyAttribute.LABEL, label + ":Private")
+                .build();
 
-        keyPairGen.initialize(spec);
+        // Create KeyPairAttributesMap and use that to initialize the keyPair generator
+        KeyPairAttributesMap keyPairSpec = new KeyPairAttributesMapBuilder()
+                        .withPublic(publicKeyAttrsMap)
+                        .withPrivate(privateKeyAttrsMap)
+                        .build();
+
+        keyPairGen.initialize(keyPairSpec);
 
         return keyPairGen.generateKeyPair();
     }

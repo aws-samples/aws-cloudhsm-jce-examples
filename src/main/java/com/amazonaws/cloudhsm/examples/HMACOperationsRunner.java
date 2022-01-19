@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,6 +16,7 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -53,7 +54,9 @@ public class HMACOperationsRunner {
 
     public static void main(final String[] args) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
@@ -61,15 +64,10 @@ public class HMACOperationsRunner {
 
         String plainText = "This is a sample Plain Text Message!";
 
-        Key key = SymmetricKeys.generateExtractableAESKey(256, "HmacTest");
-        String algorithm = "HmacSHA512";
+        Key key = SymmetricKeys.generateHmacKey("HmacTest");
+        String algorithm = "HmacSHA1";
 
-        byte[] caviumDigest = digest(plainText.getBytes("UTF-8"), key, algorithm, "Cavium");
-        System.out.println("Cavium HMAC= " + Base64.getEncoder().encodeToString(caviumDigest));
-
-        byte[] sunDigest = digest(plainText.getBytes("UTF-8"), key, algorithm, "SunJCE");
-        System.out.println("SunJCE HMAC= " + Base64.getEncoder().encodeToString(sunDigest));
-
-        assert(java.util.Arrays.equals(caviumDigest, sunDigest));
+        byte[] cloudHsmDigest = digest(plainText.getBytes("UTF-8"), key, algorithm, CloudHsmProvider.PROVIDER_NAME);
+        System.out.println("CloudHSM HMAC= " + Base64.getEncoder().encodeToString(cloudHsmDigest));
     }
 }

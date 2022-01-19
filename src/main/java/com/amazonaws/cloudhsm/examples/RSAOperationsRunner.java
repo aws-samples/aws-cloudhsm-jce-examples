@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,6 +16,7 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -59,7 +60,7 @@ public class RSAOperationsRunner {
             NoSuchPaddingException,
             IllegalBlockSizeException,
             BadPaddingException {
-        Cipher encCipher = Cipher.getInstance(transformation, "Cavium");
+        Cipher encCipher = Cipher.getInstance(transformation, CloudHsmProvider.PROVIDER_NAME);
         encCipher.init(Cipher.ENCRYPT_MODE, key);
         return encCipher.doFinal(plainText);
     }
@@ -86,7 +87,7 @@ public class RSAOperationsRunner {
             NoSuchPaddingException,
             IllegalBlockSizeException,
             BadPaddingException {
-        Cipher decCipher = Cipher.getInstance(transformation, "Cavium");
+        Cipher decCipher = Cipher.getInstance(transformation, CloudHsmProvider.PROVIDER_NAME);
         decCipher.init(Cipher.DECRYPT_MODE, key);
         return decCipher.doFinal(cipherText);
     }
@@ -106,7 +107,7 @@ public class RSAOperationsRunner {
      */
     public static byte[] sign(byte[] message, PrivateKey key, String signingAlgorithm)
             throws SignatureException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
-        Signature sig = Signature.getInstance(signingAlgorithm, "Cavium");
+        Signature sig = Signature.getInstance(signingAlgorithm, "CloudHSM");
         sig.initSign(key);
         sig.update(message);
         return sig.sign();
@@ -128,7 +129,7 @@ public class RSAOperationsRunner {
      */
     public static boolean verify(byte[] message, byte[] signature, PublicKey publicKey, String signingAlgorithm)
             throws SignatureException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
-        Signature sig = Signature.getInstance(signingAlgorithm, "Cavium");
+        Signature sig = Signature.getInstance(signingAlgorithm, "CloudHSM");
         sig.initVerify(publicKey);
         sig.update(message);
         return sig.verify(signature);
@@ -136,7 +137,9 @@ public class RSAOperationsRunner {
 
     public static void main(final String[] args) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
@@ -156,7 +159,7 @@ public class RSAOperationsRunner {
         byte[] decryptedText = decrypt(transformation, kp.getPrivate(), cipherText);
         System.out.println("Decrypted text = " + new String(decryptedText, "UTF-8"));
 
-        String signingAlgorithm = "SHA512withRSA/PSS";
+        String signingAlgorithm = "SHA512withRSA";
         byte[] signature = sign(plainText.getBytes("UTF-8"), kp.getPrivate(), signingAlgorithm);
         System.out.println("Plaintext signature = " + Base64.getEncoder().encodeToString(signature));
 

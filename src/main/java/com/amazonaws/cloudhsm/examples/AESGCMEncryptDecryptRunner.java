@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,6 +16,7 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -40,7 +41,9 @@ public class AESGCMEncryptDecryptRunner {
 
     public static void main(String[] z) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
@@ -84,7 +87,7 @@ public class AESGCMEncryptDecryptRunner {
     public static List<byte[]> encrypt(Key key, byte[] plainText, byte[] aad) {
         try {
             // Create an encryption cipher.
-            Cipher encCipher = Cipher.getInstance("AES/GCM/NoPadding", "Cavium");
+            Cipher encCipher = Cipher.getInstance("AES/GCM/NoPadding", CloudHsmProvider.PROVIDER_NAME);
             encCipher.init(Cipher.ENCRYPT_MODE, key);
             encCipher.updateAAD(aad);
             encCipher.update(plainText);
@@ -115,7 +118,7 @@ public class AESGCMEncryptDecryptRunner {
             // Only 128 bit tags are supported
             GCMParameterSpec gcmSpec = new GCMParameterSpec(16 * Byte.SIZE, iv);
 
-            decCipher = Cipher.getInstance("AES/GCM/NoPadding", "Cavium");
+            decCipher = Cipher.getInstance("AES/GCM/NoPadding", CloudHsmProvider.PROVIDER_NAME);
             decCipher.init(Cipher.DECRYPT_MODE, key, gcmSpec);
             decCipher.updateAAD(aad);
             return decCipher.doFinal(cipherText);

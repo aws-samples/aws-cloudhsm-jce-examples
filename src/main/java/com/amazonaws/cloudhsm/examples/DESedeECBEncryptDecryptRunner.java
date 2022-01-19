@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,6 +16,7 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -35,7 +36,9 @@ public class DESedeECBEncryptDecryptRunner {
 
     public static void main(String[] z) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
@@ -66,7 +69,7 @@ public class DESedeECBEncryptDecryptRunner {
     public static byte[] encrypt(Key key, byte[] plainText) {
         try {
             // Create an encryption cipher.
-            Cipher encCipher = Cipher.getInstance("DESede/ECB/PKCS5Padding", "Cavium");
+            Cipher encCipher = Cipher.getInstance("DESede/ECB/NoPadding", CloudHsmProvider.PROVIDER_NAME);
             encCipher.init(Cipher.ENCRYPT_MODE, key);
             return encCipher.doFinal(plainText);
 
@@ -87,7 +90,7 @@ public class DESedeECBEncryptDecryptRunner {
     public static byte[] decrypt(Key key, byte[] cipherText) {
         Cipher decCipher;
         try {
-            decCipher = Cipher.getInstance("DESede/ECB/PKCS5Padding", "Cavium");
+            decCipher = Cipher.getInstance("DESede/ECB/NoPadding", CloudHsmProvider.PROVIDER_NAME);
             decCipher.init(Cipher.DECRYPT_MODE, key);
             return decCipher.doFinal(cipherText);
 
