@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,9 +16,10 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
-import com.cavium.key.parameter.CaviumDESKeyGenParameterSpec;
-
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMap;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
+import com.amazonaws.cloudhsm.jce.jni.exception.AddAttributeException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -31,21 +32,22 @@ import javax.crypto.SecretKey;
  */
 public class SymmetricKeys {
     /**
-     * Generate an AES key.
-     * In this example method, the key is never persistent and is never extractable.
+     * Generate an AES key with a specific label and keysize.
      *
      * @param keySizeInBits Size of the key.
      * @param keyLabel      Label to associate with the key.
      * @return Key object
      */
     public static Key generateAESKey(int keySizeInBits, String keyLabel)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        boolean isExtractable = false;
-        boolean isPersistent = false;
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
+            AddAttributeException {
 
-        KeyGenerator keyGen = KeyGenerator.getInstance("AES", "Cavium");
+        // Create an Aes keygen Algorithm parameter spec using KeyAttributesMap
+        KeyAttributesMap aesSpec = new KeyAttributesMap();
+        aesSpec.put(KeyAttribute.LABEL, keyLabel);
+        aesSpec.put(KeyAttribute.SIZE, keySizeInBits/8);
 
-        CaviumAESKeyGenParameterSpec aesSpec = new CaviumAESKeyGenParameterSpec(keySizeInBits, keyLabel, isExtractable, isPersistent);
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES", CloudHsmProvider.PROVIDER_NAME);
         keyGen.init(aesSpec);
         SecretKey aesKey = keyGen.generateKey();
 
@@ -53,30 +55,29 @@ public class SymmetricKeys {
     }
 
     /**
-     * Generate an extractable AES key.
-     * In this example method, the key is extractable and is never persistent.
+     * Generate a Hmac key with a specific label.
      *
-     * @param keySizeInBits Size of the key.
-     * @param keyLabel      Label to associate with the key.
+     * @param keyLabel Label to associate with the key.
      * @return Key object
      */
-    public static Key generateExtractableAESKey(int keySizeInBits, String keyLabel)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        boolean isExtractable = true;
-        boolean isPersistent = false;
+    public static Key generateHmacKey(String keyLabel)
+        throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
+        AddAttributeException {
 
-        KeyGenerator keyGen = KeyGenerator.getInstance("AES", "Cavium");
+        // Create an Hmac keygen Algorithm parameter spec using KeyAttributesMap
+        KeyAttributesMap hmacSpec = new KeyAttributesMap();
+        hmacSpec.put(KeyAttribute.LABEL, keyLabel);
+        hmacSpec.put(KeyAttribute.SIZE, 24);
 
-        CaviumAESKeyGenParameterSpec aesSpec = new CaviumAESKeyGenParameterSpec(keySizeInBits, keyLabel, isExtractable, isPersistent);
-        keyGen.init(aesSpec);
-        SecretKey aesKey = keyGen.generateKey();
+        KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1", CloudHsmProvider.PROVIDER_NAME);
+        keyGen.init(hmacSpec);
+        SecretKey hmacKey = keyGen.generateKey();
 
-        return aesKey;
+        return hmacKey;
     }
 
     /**
-     * Generate a DES key.
-     * In this example method, the key is never persistent and is never extractable.
+     * Generate a DES key with a specific label.
      *
      * @param keyLabel
      * @return Key object
@@ -85,13 +86,14 @@ public class SymmetricKeys {
      * @throws NoSuchProviderException
      */
     public static Key generateDESKey(String keyLabel)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        boolean isExtractable = false;
-        boolean isPersistent = false;
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
+            AddAttributeException {
 
-        KeyGenerator keyGen = KeyGenerator.getInstance("DESede", "Cavium");
+        // Create a Des3 keygen Algorithm parameter spec using KeyAttributesMap
+        KeyAttributesMap desSpec = new KeyAttributesMap();
+        desSpec.put(KeyAttribute.LABEL, keyLabel);
 
-        CaviumDESKeyGenParameterSpec desSpec = new CaviumDESKeyGenParameterSpec(192, keyLabel, isExtractable, isPersistent);
+        KeyGenerator keyGen = KeyGenerator.getInstance("DESede", CloudHsmProvider.PROVIDER_NAME);
         keyGen.init(desSpec);
         SecretKey des3Key = keyGen.generateKey();
         return des3Key;

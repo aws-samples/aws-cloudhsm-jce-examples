@@ -19,8 +19,8 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmVersion>3.4.4</cloudhsmVersion>
-                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-${cloudhsmVersion}.jar</cloudhsmJarPath>
+                <cloudhsmVersion>5.4.0</cloudhsmVersion>
+                <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-jce-${cloudhsmVersion}.jar</cloudhsmJarPath>
             </properties>
         </profile>
     </profiles>
@@ -33,43 +33,13 @@
                 <version>2.5.1</version>
                 <executions>
                     <execution>
-                        <id>install-log4j-core</id>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                        <phase>validate</phase>
-                        <configuration>
-                            <groupId>org.apache.logging.log4j-core</groupId>
-                            <artifactId>log4j-core</artifactId>
-                            <version>2.17.1</version>
-                            <packaging>jar</packaging>
-                            <file>/opt/cloudhsm/java/log4j-core-2.17.1.jar</file>
-                            <generatePom>true</generatePom>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>install-log4j-api</id>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                        <phase>validate</phase>
-                        <configuration>
-                            <groupId>org.apache.logging.log4j-api</groupId>
-                            <artifactId>log4j-api</artifactId>
-                            <version>2.17.1</version>
-                            <packaging>jar</packaging>
-                            <file>/opt/cloudhsm/java/log4j-api-2.17.1.jar</file>
-                            <generatePom>true</generatePom>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>install-cloudhsm-jce</id>
                         <goals>
                             <goal>install-file</goal>
                         </goals>
                         <phase>validate</phase>
                         <configuration>
-                            <groupId>com.cavium</groupId>
+                            <groupId>com.amazonaws</groupId>
                             <artifactId>cloudhsm</artifactId>
                             <version>${cloudhsmVersion}</version>
                             <packaging>jar</packaging>
@@ -85,58 +55,6 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>2.4.1</version>
                 <executions>
-                    <execution>
-                        <id>build-login</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/login-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.LoginRunner</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>login-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-client-failure</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/client-failure-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.ClientFailureRunner</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>client-failure-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>build-cbc-runner</id>
                         <phase>package</phase>
@@ -268,97 +186,19 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>build-wrapping-runner</id>
+                        <id>build-login</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <outputFile>target/assembly/aes-wrapping-runner.jar</outputFile>
+                            <outputFile>target/assembly/login-runner.jar</outputFile>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.AESWrappingRunner</mainClass>
+                                    <mainClass>com.amazonaws.cloudhsm.examples.LoginRunner</mainClass>
                                 </transformer>
                             </transformers>
-                            <finalName>aes-wrapping-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-aes-gcm-wrapping-runner</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/aes-gcm-wrapping-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.AESGCMWrappingRunner</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>aes-gcm-wrapping-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-signature</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/sign-threaded-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.SignThreadedRunner</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>sign-threaded-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-keystore</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/keystore-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.KeyStoreExampleRunner</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>keystore-runner</finalName>
+                            <finalName>login-runner</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -381,36 +221,10 @@
                             <outputFile>target/assembly/cloudhsm-keystore-runner.jar</outputFile>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.CloudHSMKeyStoreExampleRunner</mainClass>
+                                    <mainClass>com.amazonaws.cloudhsm.examples.KeyStoreExampleRunner</mainClass>
                                 </transformer>
                             </transformers>
                             <finalName>cloudhsm-keystore-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-rsawrap-runner</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/rsawrap-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.RSAWrappingRunner</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>rsawrap-runner</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -437,32 +251,6 @@
                                 </transformer>
                             </transformers>
                             <finalName>rsaops-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                     <execution>
-                        <id>build-ecdhops-runner</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/ecdhops-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.ECDHOperationsRunner</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>ecdhops-runner</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -554,32 +342,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>build-rsaimport-utility</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>target/assembly/rsa-import-runner.jar</outputFile>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.RSAImportKey</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>rsa-import-runner</finalName>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>build-custom-key-attributes</id>
                         <phase>package</phase>
                         <goals>
@@ -589,7 +351,7 @@
                             <outputFile>target/assembly/custom-key-attributes-runner.jar</outputFile>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.amazonaws.cloudhsm.examples.CustomKeyAttributesRunner</mainClass>
+                                    <mainClass>com.amazonaws.cloudhsm.examples.KeyAttributesRunner</mainClass>
                                 </transformer>
                             </transformers>
                             <finalName>custom-key-attributes-runner</finalName>
@@ -614,24 +376,6 @@
                 <version>1.6.0</version>
                 <executions>
                     <execution>
-                        <id>verify-login</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
-                                <argument>-jar</argument>
-                                <argument>target/assembly/login-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>verify-aes-gcm</id>
                         <phase>verify</phase>
                         <goals>
@@ -641,7 +385,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aesgcm-runner.jar</argument>
                                 <argument>--method</argument>
@@ -659,7 +402,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aesctr-runner.jar</argument>
                                 <argument>--method</argument>
@@ -677,45 +419,8 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/desecb-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>verify-aes-wrapping</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
-                                <argument>-jar</argument>
-                                <argument>target/assembly/aes-wrapping-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                     <execution>
-                        <id>verify-aes-gcm-wrapping</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
-                                <argument>-jar</argument>
-                                <argument>target/assembly/aes-gcm-wrapping-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
@@ -731,7 +436,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/cbc-runner.jar</argument>
                                 <argument>--method</argument>
@@ -749,7 +453,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/ecb-runner.jar</argument>
                                 <argument>--method</argument>
@@ -767,7 +470,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/ecops-runner.jar</argument>
                                 <argument>--method</argument>
@@ -785,27 +487,8 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/hmacops-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>verify-keystore</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
-                                <argument>-jar</argument>
-                                <argument>target/assembly/keystore-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
@@ -821,7 +504,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/cloudhsm-keystore-runner.jar</argument>
                                 <argument>--method</argument>
@@ -839,63 +521,8 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/rsaops-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>verify-ecdh-ops</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
-                                <argument>-jar</argument>
-                                <argument>target/assembly/ecdhops-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>verify-sign-threaded</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
-                                <argument>-jar</argument>
-                                <argument>target/assembly/sign-threaded-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>verify-rsa-wrap</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
-                                <argument>-jar</argument>
-                                <argument>target/assembly/rsawrap-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
@@ -911,9 +538,25 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-enableassertions</argument>
-                                <argument>-Djava.library.path=/opt/cloudhsm/lib</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/custom-key-attributes-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-login</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/login-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
@@ -926,17 +569,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.logging.log4j-core</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j-api</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>2.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.cavium</groupId>
+            <groupId>com.amazonaws</groupId>
             <artifactId>cloudhsm</artifactId>
             <version>${cloudhsmVersion}</version>
         </dependency>

@@ -11,10 +11,10 @@ This sample code is made available under a modified MIT license. See the LICENSE
 
 ### Dependencies
 
-The latest version of CloudHSM Client and JCE dependencies are required.
+The latest SDK5 version of CloudHSM JCE is required.
 They should be installed using the official procedures documented here:
 
-* https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install.html
+* https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install_5.html
 
 The examples are tested on a fresh Amazon Linux 2 AMI. You will need to have the following packages 
 installed:
@@ -63,11 +63,11 @@ the official instructions here:
 
 * https://docs.aws.amazon.com/cloudhsm/latest/userguide/getting-started.html
 
-All Java dependencies should be bundled in the fat jars. You will only need to specify the location of the
-native library in `/opt/cloudhsm/lib`. Jars can be run using the following command line (as an example): 
+All Java dependencies should be bundled in the fat jars.
+Jars can be run using the following command line (as an example):
 
 ```
-java -ea -Djava.library.path=/opt/cloudhsm/lib/ -jar target/assembly/login-runner.jar --help
+java -ea -jar target/assembly/login-runner.jar --help
 ```
 
 ## Running and verifying all the samples

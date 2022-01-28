@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,6 +16,7 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
@@ -24,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.util.Base64;
+import java.util.Random;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -36,14 +38,16 @@ public class ECBEncryptDecryptRunner {
 
     public static void main(final String[] args) throws Exception {
         try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
         } catch (IOException ex) {
             System.out.println(ex);
             return;
         }
 
         System.out.println("Using AES to test encrypt/decrypt in ECB mode");
-        String transformation = "AES/ECB/PKCS5Padding";
+        String transformation = "AES/ECB/NoPadding";
         Key key = SymmetricKeys.generateAESKey(256, "AESECB Test");
         encryptDecrypt(transformation, key);
     }
@@ -70,20 +74,22 @@ public class ECBEncryptDecryptRunner {
             IllegalBlockSizeException,
             BadPaddingException {
 
-        String plainText = "This is a sample plain text message!";
+        byte[] plainText = new byte[32];
+        new Random().nextBytes(plainText);
+        System.out.println("Base64 plain text = " + Base64.getEncoder().encodeToString(plainText));
 
         // Encrypt the string and display the base64 cipher text
-        Cipher encryptCipher = Cipher.getInstance(transformation, "Cavium");
+        Cipher encryptCipher = Cipher.getInstance(transformation, CloudHsmProvider.PROVIDER_NAME);
         encryptCipher.init(Cipher.ENCRYPT_MODE, key);
-        byte[] cipherText = encryptCipher.doFinal(plainText.getBytes("UTF-8"));
+        byte[] cipherText = encryptCipher.doFinal(plainText);
 
         System.out.println("Base64 cipher text = " + Base64.getEncoder().encodeToString(cipherText));
 
         // Decrypt the cipher text and display the original string
-        Cipher decryptCipher = Cipher.getInstance(transformation, "Cavium");
+        Cipher decryptCipher = Cipher.getInstance(transformation, CloudHsmProvider.PROVIDER_NAME);
         decryptCipher.init(Cipher.DECRYPT_MODE, key);
         byte[] decryptedText = decryptCipher.doFinal(cipherText);
 
-        System.out.println("Decrypted text = " + new String(decryptedText, "UTF-8"));
+        System.out.println("Base64 decrypted text = " + Base64.getEncoder().encodeToString(decryptedText));
     }
 }

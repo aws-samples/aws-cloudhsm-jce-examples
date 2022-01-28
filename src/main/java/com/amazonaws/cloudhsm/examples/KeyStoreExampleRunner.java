@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,79 +16,131 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
-import com.cavium.key.CaviumKey;
-import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
-
-import java.security.InvalidAlgorithmParameterException;
-import java.security.Key;
+import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import java.security.KeyStore.PasswordProtection;
+import java.security.KeyStore.PrivateKeyEntry;
 import java.security.Security;
 import java.util.Enumeration;
-import javax.crypto.KeyGenerator;
 
 /**
- * KeyStoreExampleRunner demonstrates how to enumerate through the KeyStore, and how to find a specific key by label.
+ * KeyStoreExampleRunner demonstrates how to load a keystore, get a key entry and list all aliases
+ * on the keystore.
+ *
  * This example relies on implicit credentials, so you must setup your environment correctly.
  *
  * https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install.html#java-library-credentials
  */
 public class KeyStoreExampleRunner {
-    /**
-     * Generate and retrieve a key from the keystore.
-     * @param argv
-     * @throws Exception
-     */
-    public static void main(String[] argv) throws Exception {
-        Security.addProvider(new com.cavium.provider.CaviumProvider());
 
-        KeyStore keyStore = KeyStore.getInstance("Cavium");
+     private static String helpString = "KeyStoreExampleRunner\n" +
+            "This sample demonstrates how to load and store keys using a keystore.\n\n" +
+            "Options\n" +
+            "\t--help\t\t\tDisplay this message.\n" +
+            "\t--store <filename>\t\tPath of the keystore.\n" +
+            "\t--password <password>\t\tPassword for the keystore (not your CU password).\n" +
+            "\t--label <label>\t\t\tLabel to store the key and certificate under.\n" +
+            "\t--list\t\t\tList all the keys in the keystore.\n\n";
 
-        // load() is required to initialize the JCE keystore, however behind the scenes
-        // this is a no-op. KeyStore authentication should done using the LoginManager
-        // explicitly, or relying on implicit login.
-        keyStore.load(null, null);
+    public static void main(String[] args) throws Exception {
+        try {
+            if (Security.getProvider(CloudHsmProvider.PROVIDER_NAME) == null) {
+                Security.addProvider(new CloudHsmProvider());
+            }
+        } catch (IOException ex) {
+            System.out.println(ex);
+            return;
+        }
+        KeyStore keyStore = KeyStore.getInstance("CloudHSM");
 
-        // Find and display the amount of keys in the HSM.
-        System.out.printf("The KeyStore contains %d keys\n", keyStore.size());
-
-        String keyLabel = "Test KeyStoreLabel";
-        generateAesKey(keyLabel);
-
-        if (keyStore.containsAlias(keyLabel)) {
-            // If using implicit credentials, the getKeyByHandle() method will kickoff the first authentication attempt.
-            // If the session is already authenticated, then getKeyByHandle() will simply reach out to the HSM.
-            Key k =  keyStore.getKey(keyLabel, null);
-            System.out.printf("Generated key label: %s\n", ((CaviumKey) k).getLabel());
-            System.out.printf("Generated key handle: %d\n", ((CaviumKey) k).getHandle());
+        String keystoreFile = null;
+        String password = null;
+        String label = null;
+        boolean list = false;
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            switch (args[i]) {
+                case "--store":
+                    keystoreFile = args[++i];
+                    break;
+                case "--password":
+                    password = args[++i];
+                    break;
+                case "--label":
+                    label = args[++i];
+                    break;
+                case "--list":
+                    list = true;
+                    break;
+                case "--help":
+                    help();
+                    return;
+            }
         }
 
-        // Iterate throught the rest of the KeyStore.
-        for(Enumeration<String> entry = keyStore.aliases(); entry.hasMoreElements();) {
-            System.out.println(entry.nextElement());
+        if (null == keystoreFile || null == password) {
+            help();
+            return;
         }
+
+        if (list) {
+            listKeys(keystoreFile, password);
+            return;
+        }
+
+        if (null == label) {
+            label = "Keystore Example Keypair";
+        }
+
+        /**
+         * This call to keyStore.load() will open the pkcs12 keystore with the supplied
+         * password and connect to the HSM. The CU credentials must be specified using
+         * standard CloudHSM login methods.
+         */
+        try {
+            FileInputStream instream = new FileInputStream(keystoreFile);
+            keyStore.load(instream, password.toCharArray());
+        } catch (FileNotFoundException ex) {
+            System.err.println("Keystore not found, loading an empty store");
+            keyStore.load(null, null);
+        }
+
+        PasswordProtection passwd = new PasswordProtection(password.toCharArray());
+        System.out.println("Searching for example key and certificate...");
+
+        PrivateKeyEntry keyEntry = (PrivateKeyEntry) keyStore.getEntry(label, passwd);
+        if (null == keyEntry) {
+            System.out.println("Unable to find a key entry.");
+
+            return;
+        }
+        String name = keyEntry.getCertificate().toString();
+        System.out.printf("Found private key %s with certificate %s%n", label, name);
+    }
+
+    private static void help() {
+        System.out.println(helpString);
     }
 
     /**
-     * Generate a session AES key that can be pulled from the keyStore.
-     * @param keyLabel The label of the key to create.
-     * @return The Key object.
+     * List all the keys in the keystore.
      */
-    private static Key generateAesKey(String keyLabel) {
-        int keySizeBits = 256;
-        boolean isExtractable = false;
-        boolean isPersistent = false;
+    private static void listKeys(String keystoreFile, String password) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance(CloudHsmProvider.PROVIDER_NAME);
 
         try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES","Cavium");
-            CaviumAESKeyGenParameterSpec aesSpec = new CaviumAESKeyGenParameterSpec(keySizeBits, keyLabel, isExtractable, isPersistent);
-            keyGen.init(aesSpec);
+            FileInputStream instream = new FileInputStream(keystoreFile);
+            keyStore.load(instream, password.toCharArray());
+        } catch (FileNotFoundException ex) {
+            System.err.println("Keystore not found, loading an empty store");
+            keyStore.load(null, null);
+        }
 
-            return keyGen.generateKey();
-        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException ex) {
-            ex.printStackTrace();
-            return null;
+        for(Enumeration<String> entry = keyStore.aliases(); entry.hasMoreElements();) {
+            System.out.println(entry.nextElement());
         }
     }
 }
