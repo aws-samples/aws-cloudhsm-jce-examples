@@ -19,7 +19,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmVersion>5.4.0</cloudhsmVersion>
+                <cloudhsmVersion>5.5.0</cloudhsmVersion>
                 <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-jce-${cloudhsmVersion}.jar</cloudhsmJarPath>
             </properties>
         </profile>
@@ -251,6 +251,32 @@
                                 </transformer>
                             </transformers>
                             <finalName>rsaops-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-rsaimport-utility</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/rsa-import-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.RSAImportKey</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>rsa-import-runner</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -523,6 +549,23 @@
                                 <argument>-enableassertions</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/rsaops-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-rsa-import</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/rsa-import-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>

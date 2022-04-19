@@ -49,7 +49,19 @@ sudo update-alternatives --config java
 
 You can build the project using Maven. Maven will copy the required CloudHSM jars into a local repository
 and build fat jars which can be executed from the command line. These fat jars will be placed in the
-`target/assembly/` directory. To build the project, use the following command:
+`target/assembly/` directory. 
+
+Before you build your project, be sure to enter the correct CloudHSM version number based on which CloudHSM JCE Provider
+you have installed on your system. By default, this project is set to use the latest available CloudHSM version, and 
+you may need to make modifications if you are running an older version (note that not all tests are guaranteed to work 
+with older versions of the client). To do this, modify the following line in the `pom.xml` to match your version:
+
+```
+<cloudhsmVersion>5.5.0</cloudhsmVersion>
+```
+
+
+To build the project, use the following command:
 
 ```
 mvn validate
