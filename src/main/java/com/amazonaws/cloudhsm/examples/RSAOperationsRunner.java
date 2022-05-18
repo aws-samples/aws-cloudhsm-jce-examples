@@ -18,6 +18,7 @@ package com.amazonaws.cloudhsm.examples;
 
 import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
@@ -152,21 +153,38 @@ public class RSAOperationsRunner {
 
         System.out.println("Performing RSA Encryption Operation");
         byte[] cipherText = null;
-        cipherText = encrypt(transformation, kp.getPublic(), plainText.getBytes("UTF-8"));
+        cipherText = encrypt(transformation, kp.getPublic(), plainText.getBytes(
+            StandardCharsets.UTF_8));
 
         System.out.println("Encrypted plaintext = " + Base64.getEncoder().encodeToString(cipherText));
 
         byte[] decryptedText = decrypt(transformation, kp.getPrivate(), cipherText);
-        System.out.println("Decrypted text = " + new String(decryptedText, "UTF-8"));
+        System.out.println("Decrypted text = " + new String(decryptedText, StandardCharsets.UTF_8));
 
-        String signingAlgorithm = "SHA512withRSA";
-        byte[] signature = sign(plainText.getBytes("UTF-8"), kp.getPrivate(), signingAlgorithm);
-        System.out.println("Plaintext signature = " + Base64.getEncoder().encodeToString(signature));
+        // RSA sign and verify.
+        {
+            String signingAlgorithm = "SHA512withRSA";
+            byte[] signature = sign(plainText.getBytes(StandardCharsets.UTF_8), kp.getPrivate(), signingAlgorithm);
+            System.out.println("RSA signature = " + Base64.getEncoder().encodeToString(signature));
 
-        if (verify(plainText.getBytes("UTF-8"), signature, kp.getPublic(), signingAlgorithm)) {
-            System.out.println("Signature verified");
-        } else {
-            System.out.println("Signature is invalid!");
+            if (verify(plainText.getBytes(StandardCharsets.UTF_8), signature, kp.getPublic(), signingAlgorithm)) {
+                System.out.println("Signature verified");
+            } else {
+                System.out.println("Signature is invalid!");
+            }
+        }
+
+        // RSA PSS sign and verify.
+        {
+            String signingAlgorithm = "SHA512withRSA/PSS";
+            byte[] signature = sign(plainText.getBytes(StandardCharsets.UTF_8), kp.getPrivate(), signingAlgorithm);
+            System.out.println("RSA PSS signature = " + Base64.getEncoder().encodeToString(signature));
+
+            if (verify(plainText.getBytes(StandardCharsets.UTF_8), signature, kp.getPublic(), signingAlgorithm)) {
+                System.out.println("Signature verified");
+            } else {
+                System.out.println("Signature is invalid!");
+            }
         }
     }
 }
