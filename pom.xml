@@ -393,6 +393,32 @@
                             </filters>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>build-aeswrap-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/aeswrap-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.AESWrappingRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>aeswrap-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -600,6 +626,23 @@
                                 <argument>-enableassertions</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/login-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-aeswrap</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/aeswrap-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
