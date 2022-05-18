@@ -419,6 +419,32 @@
                             </filters>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>build-rsawrap-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/rsawrap-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.RSAWrappingRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>rsawrap-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -643,6 +669,23 @@
                                 <argument>-enableassertions</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/aeswrap-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-rsawrap</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/rsawrap-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
