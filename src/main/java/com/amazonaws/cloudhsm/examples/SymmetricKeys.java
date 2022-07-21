@@ -45,7 +45,7 @@ public class SymmetricKeys {
         // Create an Aes keygen Algorithm parameter spec using KeyAttributesMap
         KeyAttributesMap aesSpec = new KeyAttributesMap();
         aesSpec.put(KeyAttribute.LABEL, keyLabel);
-        aesSpec.put(KeyAttribute.SIZE, keySizeInBits/8);
+        aesSpec.put(KeyAttribute.SIZE, keySizeInBits);
 
         KeyGenerator keyGen = KeyGenerator.getInstance("AES", CloudHsmProvider.PROVIDER_NAME);
         keyGen.init(aesSpec);
@@ -67,7 +67,7 @@ public class SymmetricKeys {
         // Create an Hmac keygen Algorithm parameter spec using KeyAttributesMap
         KeyAttributesMap hmacSpec = new KeyAttributesMap();
         hmacSpec.put(KeyAttribute.LABEL, keyLabel);
-        hmacSpec.put(KeyAttribute.SIZE, 24);
+        hmacSpec.put(KeyAttribute.SIZE, 192);
 
         KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1", CloudHsmProvider.PROVIDER_NAME);
         keyGen.init(hmacSpec);
