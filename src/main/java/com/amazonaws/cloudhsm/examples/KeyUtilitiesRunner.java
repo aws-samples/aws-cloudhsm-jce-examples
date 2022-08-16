@@ -249,6 +249,7 @@ public class KeyUtilitiesRunner {
         // Add key data for the key to be imported
         KeyAttributesMap keySpec = new KeyAttributesMapBuilder()
             .put(KeyAttribute.MODULUS, rsaKey.getModulus().toByteArray())
+            .put(KeyAttribute.PRIVATE_EXPONENT, rsaKey.getPrivateExponent().toByteArray())
             .put(KeyAttribute.PUBLIC_EXPONENT, rsaKey.getPublicExponent().toByteArray())
             .put(KeyAttribute.PRIME_P, rsaKey.getPrimeP().toByteArray())
             .put(KeyAttribute.PRIME_Q, rsaKey.getPrimeQ().toByteArray())
@@ -259,6 +260,10 @@ public class KeyUtilitiesRunner {
 
         // Add additional key related attributes
         keySpec.put(KeyAttribute.LABEL, keyLabel);
+
+        // The imported key will be ephemeral; it will be deleted from the HSM when the
+        // application exits. To persist the key you must set this attribute to true.
+        keySpec.put(KeyAttribute.TOKEN, false);
 
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA", CloudHsmProvider.PROVIDER_NAME);
