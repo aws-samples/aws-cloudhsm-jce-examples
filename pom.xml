@@ -702,5 +702,11 @@
             <artifactId>cloudhsm</artifactId>
             <version>${cloudhsmVersion}</version>
         </dependency>
+        <!-- Bouncy Castle, for generating a certificate to sign. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
     </dependencies>
 </project>

@@ -149,7 +149,7 @@ public class RSAOperationsRunner {
         String plainText = "This is a sample Plain Text Message!";
         String transformation = "RSA/ECB/OAEPPadding";
 
-        KeyPair kp = new AsymmetricKeys().generateRSAKeyPair(2048, "rsa test");
+        KeyPair kp = AsymmetricKeys.generateRSAKeyPair(2048, "rsa test");
 
         System.out.println("Performing RSA Encryption Operation");
         byte[] cipherText = null;
