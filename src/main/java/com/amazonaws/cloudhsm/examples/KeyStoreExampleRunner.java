@@ -17,6 +17,9 @@
 package com.amazonaws.cloudhsm.examples;
 
 import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMap;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMapBuilder;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -141,7 +144,13 @@ public class KeyStoreExampleRunner {
          */
         if (!keyStore.containsAlias(privateLabel)) {
             System.out.println("No entry found for '" + privateLabel + "', creating a keypair...");
-            final KeyPair keyPair = AsymmetricKeys.generateRSAKeyPair(2048, label);
+            final KeyAttributesMap requiredPublicKeyAttributes =
+                    new KeyAttributesMapBuilder().put(KeyAttribute.VERIFY, true).build();
+            final KeyAttributesMap requiredPrivateKeyAttributes =
+                    new KeyAttributesMapBuilder().put(KeyAttribute.SIGN, true).build();
+            final KeyPair keyPair =
+                    AsymmetricKeys.generateRSAKeyPair(
+                            2048, label, requiredPublicKeyAttributes, requiredPrivateKeyAttributes);
 
             /** Generate a certificate and associate the chain with the private key. */
             final Certificate selfSignedCert = createAndSignCertificate(keyPair);
