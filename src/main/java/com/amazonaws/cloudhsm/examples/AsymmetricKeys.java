@@ -16,13 +16,13 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.jni.exception.AddAttributeException;
 import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
 import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMap;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMapBuilder;
 import com.amazonaws.cloudhsm.jce.provider.attributes.KeyPairAttributesMap;
 import com.amazonaws.cloudhsm.jce.provider.attributes.KeyPairAttributesMapBuilder;
-import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMapBuilder;
-import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
-import com.amazonaws.cloudhsm.jce.jni.exception.AddAttributeException;
 
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -31,30 +31,25 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
-/**
- * Asymmetric key generation examples.
- */
+/** Asymmetric key generation examples. */
 public class AsymmetricKeys {
     /**
-     * Generate an EC key pair using the given curve.
-     * The label passed will be appended with ":public" and ":private" for the respective keys.
-     * Supported curves are documented here: https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-lib-supported.html
-     * Curve params list:
-     *     EcParams.EC_CURVE_PRIME256;
-     *     EcParams.EC_CURVE_PRIME384;
-     *     EcParams.EC_CURVE_SECP256;
-     * @param curveParams
-     * @param label
-     * @return
+     * Generate an EC key pair using the given curve. The label passed will be appended with
+     * ":Public" and ":Private" for the respective keys. Supported curves are documented here:
+     * https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-lib-supported.html Curve params
+     * list: EcParams.EC_CURVE_PRIME256; EcParams.EC_CURVE_PRIME384; EcParams.EC_CURVE_SECP256;
+     *
+     * @return a key pair object that represents the keys on the HSM.
      * @throws InvalidAlgorithmParameterException
      * @throws NoSuchAlgorithmException
      * @throws NoSuchProviderException
      */
-    public KeyPair generateECKeyPair(byte[] curveParams, String label)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
-            AddAttributeException {
+    public static KeyPair generateECKeyPair(byte[] curveParams, String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                    NoSuchProviderException, AddAttributeException {
 
-        final KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("EC", CloudHsmProvider.PROVIDER_NAME);
+        final KeyPairGenerator keyPairGen =
+                KeyPairGenerator.getInstance("EC", CloudHsmProvider.PROVIDER_NAME);
 
         // Set attributes for EC public key
         final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
@@ -62,12 +57,12 @@ public class AsymmetricKeys {
         publicKeyAttrsMap.put(KeyAttribute.EC_PARAMS, curveParams);
 
         // Set attributes for EC private key
-        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMapBuilder()
-                .put(KeyAttribute.LABEL, label + ":Private")
-                .build();
+        final KeyAttributesMap privateKeyAttrsMap =
+                new KeyAttributesMapBuilder().put(KeyAttribute.LABEL, label + ":Private").build();
 
         // Create KeyPairAttributesMap and use that to initialize the keyPair generator
-        KeyPairAttributesMap keyPairSpec = new KeyPairAttributesMapBuilder()
+        KeyPairAttributesMap keyPairSpec =
+                new KeyPairAttributesMapBuilder()
                         .withPublic(publicKeyAttrsMap)
                         .withPrivate(privateKeyAttrsMap)
                         .build();
@@ -77,34 +72,56 @@ public class AsymmetricKeys {
     }
 
     /**
-     * Generate an RSA key pair.
-     * The label passed will be appended with ":public" and ":private" for the respective keys.
-     * @param keySizeInBits
-     * @param label
-     * @return
+     * Generate an RSA key pair. The label passed will be appended with ":Public" and ":Private" for
+     * the respective keys.
+     *
+     * @return a key pair object that represents the keys on the HSM.
      * @throws InvalidAlgorithmParameterException
      * @throws NoSuchAlgorithmException
      * @throws NoSuchProviderException
      */
-    public KeyPair generateRSAKeyPair(int keySizeInBits, String label)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
-            AddAttributeException {
+    public static KeyPair generateRSAKeyPair(int keySizeInBits, String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                    NoSuchProviderException, AddAttributeException {
+        return generateRSAKeyPair(
+                keySizeInBits, label, new KeyAttributesMap(), new KeyAttributesMap());
+    }
 
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", CloudHsmProvider.PROVIDER_NAME);
+    /**
+     * Generate an RSA key pair. The label passed will be appended with ":Public" and ":Private" for
+     * the respective keys.
+     *
+     * @return a key pair object that represents the keys on the HSM.
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     */
+    public static KeyPair generateRSAKeyPair(
+            int keySizeInBits,
+            String label,
+            KeyAttributesMap additionalPublicKeyAttributes,
+            KeyAttributesMap additionalPrivateKeyAttributes)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                    NoSuchProviderException, AddAttributeException {
+
+        KeyPairGenerator keyPairGen =
+                KeyPairGenerator.getInstance("RSA", CloudHsmProvider.PROVIDER_NAME);
 
         // Set attributes for RSA public key
         final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
+        publicKeyAttrsMap.putAll(additionalPublicKeyAttributes);
         publicKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Public");
         publicKeyAttrsMap.put(KeyAttribute.MODULUS_BITS, keySizeInBits);
         publicKeyAttrsMap.put(KeyAttribute.PUBLIC_EXPONENT, new BigInteger("65537").toByteArray());
 
         // Set attributes for RSA private key
-        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMapBuilder()
-                .put(KeyAttribute.LABEL, label + ":Private")
-                .build();
+        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMap();
+        privateKeyAttrsMap.putAll(additionalPrivateKeyAttributes);
+        privateKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Private");
 
         // Create KeyPairAttributesMap and use that to initialize the keyPair generator
-        KeyPairAttributesMap keyPairSpec = new KeyPairAttributesMapBuilder()
+        KeyPairAttributesMap keyPairSpec =
+                new KeyPairAttributesMapBuilder()
                         .withPublic(publicKeyAttrsMap)
                         .withPrivate(privateKeyAttrsMap)
                         .build();
