@@ -94,7 +94,6 @@ public class KeyUtilitiesRunner {
             switch (arg) {
                 case "--label":
                     label = args[++i];
-                    System.out.println(label);
                     break;
                 case "--keytype":
                     keyTypeString = args[++i];
