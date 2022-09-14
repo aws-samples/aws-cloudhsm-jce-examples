@@ -25,7 +25,7 @@ installed:
 You can install these packages on Amazon Linux 2 by running
 
 ```
-sudo yum install -y java maven
+sudo yum install -y java-1.8.0-amazon-corretto-devel maven
 ```
 
 If you are running on Amazon Linux 1, you will need to install extra packages to get Maven.
