@@ -72,8 +72,9 @@ public class AsymmetricKeys {
     }
 
     /**
-     * Generate an RSA key pair. The label passed will be appended with ":Public" and ":Private" for
-     * the respective keys.
+     * Generate an RSA key pair.
+     *
+     * <p>The label passed will be appended with ":Public" and ":Private" for the respective keys.
      *
      * @return a key pair object that represents the keys on the HSM.
      * @throws InvalidAlgorithmParameterException
@@ -88,8 +89,9 @@ public class AsymmetricKeys {
     }
 
     /**
-     * Generate an RSA key pair. The label passed will be appended with ":Public" and ":Private" for
-     * the respective keys.
+     * Generate an RSA key pair.
+     *
+     * <p>The label passed will be appended with ":Public" and ":Private" for the respective keys.
      *
      * @return a key pair object that represents the keys on the HSM.
      * @throws InvalidAlgorithmParameterException

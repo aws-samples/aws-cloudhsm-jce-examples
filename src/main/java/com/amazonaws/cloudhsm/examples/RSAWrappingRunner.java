@@ -19,11 +19,16 @@ package com.amazonaws.cloudhsm.examples;
 import static com.amazonaws.cloudhsm.examples.HmacUtil.hmacDigest;
 
 import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMap;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMapBuilder;
+
 import java.io.IOException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.Security;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.security.auth.Destroyable;
@@ -46,12 +51,23 @@ public class RSAWrappingRunner {
             return;
         }
 
-        // Generate an RSA key pair for wrapping keys.
-        KeyPair wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPair(2048, "RsaWrapSample");
+        // Generate a Persistent RSA key pair for wrapping keys.
+        // Set attributes for RSA public key. Create persistent key.
+        final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
+        publicKeyAttrsMap.put(KeyAttribute.TOKEN, true);
 
-        // Generate a new payload key to wrap and unwrap. This sample uses an
+        // Set attributes for RSA private key
+        final KeyAttributesMap privateKeyAttrsMap =
+                new KeyAttributesMapBuilder().put(KeyAttribute.TOKEN, true).build();
+
+        KeyPair wrappingKeyPair =
+                AsymmetricKeys.generateRSAKeyPair(
+                        2048, "RsaWrapSample", publicKeyAttrsMap, privateKeyAttrsMap);
+
+        // Generate a new payload key to wrap and unwrap. This sample uses a
         // HMAC key.
-        SecretKey payloadKey = (SecretKey) SymmetricKeys.generateHmacKey("RsaWrapPayloadSample");
+        final SecretKey payloadKey =
+                (SecretKey) SymmetricKeys.generateHmacKey("RsaWrapPayloadSample");
 
         // Run the samples.
         rsaOaepWrap(wrappingKeyPair, payloadKey);
@@ -67,12 +83,13 @@ public class RSAWrappingRunner {
      * This method demonstrates "RSA/ECB/OAEPWithSHA-256ANDMGF1Padding" wrap and unwrap.
      *
      * @param wrappingKeyPair RSA key pair for wrapping
-     * @param payloadKey      Some payload-key to be wrapped
+     * @param payloadKey Some payload-key to be wrapped
      */
     private static void rsaOaepWrap(KeyPair wrappingKeyPair, Key payloadKey) throws Exception {
         // Create an RSA OAEP cipher from the CloudHSM provider.
-        Cipher cipher = Cipher.getInstance(
-            "RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", CloudHsmProvider.PROVIDER_NAME);
+        final Cipher cipher =
+                Cipher.getInstance(
+                        "RSA/ECB/OAEPWithSHA-256ANDMGF1Padding", CloudHsmProvider.PROVIDER_NAME);
 
         // Initialize the cipher in wrap mode with the public key.
         cipher.init(Cipher.WRAP_MODE, wrappingKeyPair.getPublic());
@@ -84,18 +101,19 @@ public class RSAWrappingRunner {
         cipher.init(Cipher.UNWRAP_MODE, wrappingKeyPair.getPrivate());
 
         // Unwrap the key we just wrapped.
-        Key unwrappedKey = cipher.unwrap(wrappedKey, SAMPLE_HMAC_ALGORITHM, Cipher.SECRET_KEY);
+        final Key unwrappedKey =
+                cipher.unwrap(wrappedKey, SAMPLE_HMAC_ALGORITHM, Cipher.SECRET_KEY);
 
         // Demonstrate that the unwrapped key matches the original payload key
         // by computing an HMAC digest with each key and comparing the result.
         // Then remove the new unwrapped key from CloudHSM.
         try {
-            assert (
-                MessageDigest.isEqual(
+            assert (MessageDigest.isEqual(
                     hmacDigest(payloadKey, SAMPLE_HMAC_ALGORITHM, "RSA OAEP with CloudHSM"),
                     hmacDigest(unwrappedKey, SAMPLE_HMAC_ALGORITHM, "RSA OAEP with CloudHSM")));
             System.out.println(
-                "Verified wrap and unwrap with RSA/ECB/OAEPWithSHA-256ANDMGF1Padding using the CloudHSM provider");
+                    "Verified wrap and unwrap with RSA/ECB/OAEPWithSHA-256ANDMGF1Padding using the"
+                            + " CloudHSM provider");
         } finally {
             ((Destroyable) unwrappedKey).destroy();
         }
@@ -105,12 +123,14 @@ public class RSAWrappingRunner {
      * This method demonstrates "RSAAESWrap" wrap and unwrap.
      *
      * @param wrappingKeyPair RSA key pair for wrapping
-     * @param payloadKey      Some payload-key to be wrapped
+     * @param payloadKey Some payload-key to be wrapped
      */
     private static void rsaAesWrap(KeyPair wrappingKeyPair, Key payloadKey) throws Exception {
         // Create an RSA AES cipher from the CloudHSM provider.
-        Cipher cipher = Cipher.getInstance(
-            "RSAAESWrap/ECB/OAEPWithSHA-1ANDMGF1Padding", CloudHsmProvider.PROVIDER_NAME);
+        final Cipher cipher =
+                Cipher.getInstance(
+                        "RSAAESWrap/ECB/OAEPWithSHA-1ANDMGF1Padding",
+                        CloudHsmProvider.PROVIDER_NAME);
 
         // Initialize the cipher in wrap mode with the public key.
         cipher.init(Cipher.WRAP_MODE, wrappingKeyPair.getPublic());
@@ -122,18 +142,19 @@ public class RSAWrappingRunner {
         cipher.init(Cipher.UNWRAP_MODE, wrappingKeyPair.getPrivate());
 
         // Unwrap the key we just wrapped.
-        Key unwrappedKey = cipher.unwrap(wrappedKey, SAMPLE_HMAC_ALGORITHM, Cipher.SECRET_KEY);
+        final Key unwrappedKey =
+                cipher.unwrap(wrappedKey, SAMPLE_HMAC_ALGORITHM, Cipher.SECRET_KEY);
 
         // Demonstrate that the unwrapped key matches the original payload key
         // by computing an HMAC digest with each key and comparing the result.
         // Then remove the new unwrapped key from CloudHSM.
         try {
-            assert (
-                MessageDigest.isEqual(
+            assert (MessageDigest.isEqual(
                     hmacDigest(payloadKey, SAMPLE_HMAC_ALGORITHM, "RSA AES with CloudHSM"),
                     hmacDigest(unwrappedKey, SAMPLE_HMAC_ALGORITHM, "RSA AES with CloudHSM")));
             System.out.println(
-                "Verified wrap and unwrap with RSAAESWrap/ECB/OAEPWithSHA-1ANDMGF1Padding using the CloudHSM provider");
+                    "Verified wrap and unwrap with RSAAESWrap/ECB/OAEPWithSHA-1ANDMGF1Padding using"
+                            + " the CloudHSM provider");
         } finally {
             ((Destroyable) unwrappedKey).destroy();
         }
