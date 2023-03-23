@@ -29,6 +29,7 @@ import java.security.Security;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.security.auth.Destroyable;
 
 /**
@@ -63,6 +64,7 @@ public class AESWrappingRunner {
                 (SecretKey) SymmetricKeys.generateHmacKey("AesWrapPayloadSample");
 
         // Run the samples.
+        aesGcmWrapNoPadding(aesWrappingKey, payloadKey);
         aesWrapNoPadding(aesWrappingKey, payloadKey);
         aesWrapZeroPadding(aesWrappingKey, payloadKey);
         aesWrapPkcs5Padding(aesWrappingKey, payloadKey);
@@ -70,6 +72,57 @@ public class AESWrappingRunner {
         // Remove sample keys from CloudHSM.
         aesWrappingKey.destroy();
         payloadKey.destroy();
+    }
+    
+    /**
+     * This method demonstrates "AES/GCM/NoPadding"
+     *
+     * @param aesWrappingKey AES key for wrapping
+     * @param payloadKey Some payload-key to be wrapped
+     */
+    private static void aesGcmWrapNoPadding(Key aesWrappingKey, Key payloadKey) throws Exception {
+        // Create an AESWrap no padding cipher from the CloudHSM provider.
+        final Cipher cipher =
+                Cipher.getInstance("AES/GCM/NoPadding", CloudHsmProvider.PROVIDER_NAME);
+
+        // Initialization Vector - this is overridden by HSM
+        byte[] IV = new byte[12];
+
+        // Create GCMParameterSpec GCMParameterSpec(int tagLen, byte[] iv)
+        // Can also use GCMParameterSpec(int tagLen, byte[] iv, int offset, int byteCount)
+        final int tagLen = 128;
+        GCMParameterSpec gcmSpecWrap = new GCMParameterSpec(tagLen, IV);
+
+        // Initialize the cipher in wrap mode.
+        cipher.init(Cipher.WRAP_MODE, aesWrappingKey, gcmSpecWrap);
+
+        // Wrap the payload key.
+        byte[] wrappedKey = cipher.wrap(payloadKey);
+        // Get iv from wrap cipher to perform unwrapping
+        byte[] iv = cipher.getIV();
+
+        // Initialize an AesGcmWrap no padding cipher for unwrapping.
+        // Unwrap the wrapped key using the wrapping key.
+        GCMParameterSpec gcmSpecUnwrap = new GCMParameterSpec(tagLen, iv);
+        cipher.init(Cipher.UNWRAP_MODE, aesWrappingKey, gcmSpecUnwrap);
+
+        // Unwrap the key we just wrapped.
+        final Key unwrappedKey =
+                cipher.unwrap(wrappedKey, SAMPLE_HMAC_ALGORITHM, Cipher.SECRET_KEY);
+
+        // Demonstrate that the unwrapped key matches the original payload key
+        // by computing an HMAC digest with each key and comparing the result.
+        // Then remove the new unwrapped key from CloudHSM.
+        try {
+            assert (MessageDigest.isEqual(
+                    hmacDigest(payloadKey, SAMPLE_HMAC_ALGORITHM, "AESWrap no padding"),
+                    hmacDigest(unwrappedKey, SAMPLE_HMAC_ALGORITHM, "AESWrap no padding")));
+            System.out.println(
+                    "Verified wrap and unwrap with AES/GCM/NoPadding using the CloudHSM"
+                            + " provider");
+        } finally {
+            ((Destroyable) unwrappedKey).destroy();
+        }
     }
 
     /**
