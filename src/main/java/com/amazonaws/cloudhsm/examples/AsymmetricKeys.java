@@ -89,6 +89,23 @@ public class AsymmetricKeys {
     }
 
     /**
+     * Generate an RSA key pair and the given provider.
+     *
+     * <p>The label passed will be appended with ":Public" and ":Private" for the respective keys.
+     *
+     * @return a key pair object that represents the keys on the HSM.
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     */
+    public static KeyPair generateRSAKeyPair(int keySizeInBits, String label, String providerName)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+            NoSuchProviderException, AddAttributeException {
+        return doGenerateRSAKeyPair(
+                keySizeInBits, label, new KeyAttributesMap(), new KeyAttributesMap(), providerName);
+    }
+
+    /**
      * Generate an RSA key pair.
      *
      * <p>The label passed will be appended with ":Public" and ":Private" for the respective keys.
@@ -105,9 +122,23 @@ public class AsymmetricKeys {
             KeyAttributesMap additionalPrivateKeyAttributes)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
                     NoSuchProviderException, AddAttributeException {
+        return doGenerateRSAKeyPair(keySizeInBits,
+                label,
+                additionalPublicKeyAttributes,
+                additionalPrivateKeyAttributes,
+                CloudHsmProvider.PROVIDER_NAME);
+    }
+
+    private static KeyPair doGenerateRSAKeyPair(int keySizeInBits,
+                                                String label,
+                                                KeyAttributesMap additionalPublicKeyAttributes,
+                                                KeyAttributesMap additionalPrivateKeyAttributes,
+                                                String providerName)
+                                                throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                                                NoSuchProviderException, AddAttributeException {
 
         KeyPairGenerator keyPairGen =
-                KeyPairGenerator.getInstance("RSA", CloudHsmProvider.PROVIDER_NAME);
+                KeyPairGenerator.getInstance("RSA", providerName);
 
         // Set attributes for RSA public key
         final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();

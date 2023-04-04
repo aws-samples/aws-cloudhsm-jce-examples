@@ -99,12 +99,26 @@ public class SymmetricKeys {
     public static Key generateDESKey(String keyLabel)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
                     NoSuchProviderException, AddAttributeException {
+        return doGenerateDESKey(keyLabel, CloudHsmProvider.PROVIDER_NAME);
+    }
 
+    /**
+     * Generate a DES key with a specific label and given provider.
+     *
+     * @param keyLabel
+     * @param providerName provider to be used
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     */
+    public static Key doGenerateDESKey(String keyLabel, String providerName)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException,
+            AddAttributeException{
         // Create a Des3 keygen Algorithm parameter spec using KeyAttributesMap
         KeyAttributesMap desSpec = new KeyAttributesMap();
         desSpec.put(KeyAttribute.LABEL, keyLabel);
 
-        KeyGenerator keyGen = KeyGenerator.getInstance("DESede", CloudHsmProvider.PROVIDER_NAME);
+        KeyGenerator keyGen = KeyGenerator.getInstance("DESede", providerName);
         keyGen.init(desSpec);
         SecretKey des3Key = keyGen.generateKey();
         return des3Key;
