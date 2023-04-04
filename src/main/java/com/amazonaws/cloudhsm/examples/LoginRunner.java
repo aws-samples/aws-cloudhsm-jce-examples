@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.security.Key;
 import java.security.Security;
 import java.security.AuthProvider;
+import java.text.MessageFormat;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.PasswordCallback;
@@ -117,8 +118,13 @@ public class LoginRunner {
             System.out.println(ex);
             return;
         }
+        loginWithPinOnGivenProvider(user, pass, CloudHsmProvider.PROVIDER_NAME);
+        logout(provider);
+    }
 
-        ApplicationCallBackHandler loginHandler = new ApplicationCallBackHandler(user + ":" + pass);
+    public static void loginWithPinOnGivenProvider(String user, String password, String providerName) {
+        AuthProvider provider = (AuthProvider) Security.getProvider(providerName);
+        ApplicationCallBackHandler loginHandler = new ApplicationCallBackHandler(user + ":" + password);
         try {
             provider.login(null, loginHandler);
         } catch(AccountAlreadyLoggedInException e) {
@@ -131,13 +137,7 @@ public class LoginRunner {
         } catch (LoginException e) {
             e.printStackTrace();
         }
-        System.out.printf("\nLogin successful!\n\n");
-
-        // Explicit logout is only available when you explicitly login using
-        // AuthProvider's Login method
-        logout(provider);
-
-        System.out.printf("\nLogout successful!\n\n");
+        System.out.printf(MessageFormat.format("\nLogin successful on provider {0} with user {1}!\n\n", providerName, user));
     }
 
     /**
@@ -204,11 +204,15 @@ public class LoginRunner {
      * Logout will force the provider to end your session.
      */
     public static void logout(AuthProvider provider) {
+        // Explicit logout is only available when you explicitly login using
+        // AuthProvider's Login method
         try {
             provider.logout();
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        System.out.printf(MessageFormat.format("\nLogout successful on provider {0}!\n\n", provider.getName()));
     }
 
     static class ApplicationCallBackHandler implements CallbackHandler {

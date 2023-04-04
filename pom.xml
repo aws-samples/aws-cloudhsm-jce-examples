@@ -19,7 +19,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmVersion>5.5.0</cloudhsmVersion>
+                <cloudhsmVersion>5.8.0</cloudhsmVersion>
                 <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-jce-${cloudhsmVersion}.jar</cloudhsmJarPath>
             </properties>
         </profile>
@@ -445,6 +445,32 @@
                             </filters>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>build-multi-user-multi-cluster-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/multi-user-multi-cluster-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.MultiUserMultiClusterRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>multi-user-multi-cluster-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -686,6 +712,23 @@
                                 <argument>-enableassertions</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/rsawrap-runner.jar</argument>
+                                <argument>--method</argument>
+                                <argument>environment</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-multi-user-multi-cluster</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/multi-user-multi-cluster-runner.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
