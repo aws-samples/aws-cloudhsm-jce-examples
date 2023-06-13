@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.Security;
 import java.text.MessageFormat;
+import java.util.UUID;
 
 /**
  * The sample code demonstrates the basic AES CMAC KDF operation on AWS CloudHSM. The operation has been defined by
@@ -83,6 +84,10 @@ public class AesCmacKdfOperationsRunner {
     private static final byte[] CONTEXT = "some_context".getBytes();
     private static final int DERIVED_KEY_SIZE_BITS = 192;
     private static final byte[] ENCODED_INPUT_DATA;
+    /**
+     * Defines the number of bits used to represent the counter value. Parameter is as per the NIST SP800-108 specification.
+     */
+    private static final int COUNTER_WIDTH = 8;
 
     static {
         // fixedInputData = label || 0x00 || context || dkLen in bits as 4 bytes big endian
@@ -108,7 +113,7 @@ public class AesCmacKdfOperationsRunner {
 
     private static void deriveKeyWithGivenSpecification() throws Exception {
         final SecretKey baseAesKey = generateBaseDerivationKey();
-        final String deriveKeyLabel = "deriveKeyLabel";
+        final String deriveKeyLabel = "deriveKeyLabel_" + UUID.randomUUID();
         System.out.println("Deriving the specified DESEDE Key.");
 
         // The way to derive a key using AES CMAC KDF is by instantiating a SecretKeyFactory for the derived key
@@ -117,7 +122,7 @@ public class AesCmacKdfOperationsRunner {
         // and pass in AesCmacKdfParameterSpec to initialize that instance.
         final String algorithm = "DESede";
 
-        final AesCmacKdfParameterSpec specFixed = generateSpecWithFixedInputData(/*counter width*/8,
+        final AesCmacKdfParameterSpec specFixed = generateSpecWithFixedInputData(COUNTER_WIDTH,
                 DERIVED_KEY_SIZE_BITS,
                 baseAesKey,
                 deriveKeyLabel);
@@ -130,9 +135,9 @@ public class AesCmacKdfOperationsRunner {
 
     /**
      * Constructs the fixed input data for AES CMAC KDF algorithm.
-     * @param counterWidth Defines the number of bits used to represent the counter value. Parameter is as per the NIST specification.
-     * @param dkmLengthInBits Defines the number of bits used to represent the derived key length. Parameter is as per the NIST specification.
-     * @param baseAesKey The base derivation AES key which will be used to derive the required Key using the AES CMAC KDF specification. Parameter is as per the NIST specification.
+     * @param counterWidth Defines the number of bits used to represent the counter value. Parameter is as per the NIST SP800-108 specification.
+     * @param dkmLengthInBits Defines the number of bits used to represent the derived key length. Parameter is as per the NIST SP800-108 specification.
+     * @param baseAesKey The base derivation AES key which will be used to derive the required Key using the AES CMAC KDF specification. Parameter is as per the NIST SP800-108 specification.
      * @param deriveKeyLabel The label which the required key should be derived with.
      * @return The AES CMAC KDF specification to derive the key.
      * @throws Exception If JCE provider exception is thrown.
@@ -150,7 +155,7 @@ public class AesCmacKdfOperationsRunner {
     }
 
     private static SecretKey generateBaseDerivationKey() throws Exception {
-        final String baseKeyLabel = "AesCmacTest";
+        final String baseKeyLabel = "AesCmacTest_" + UUID.randomUUID();
         System.out.println("Generating the base AES Key");
         final KeyGenerator generator =
                 KeyGenerator.getInstance("AES", CloudHsmProvider.PROVIDER_NAME);
