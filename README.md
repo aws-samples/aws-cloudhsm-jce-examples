@@ -75,6 +75,11 @@ the official instructions here:
 
 * https://docs.aws.amazon.com/cloudhsm/latest/userguide/getting-started.html
 
+You will need to provide credentials to the JCE provider in order to run the samples. Please read about
+JCE provider credentials here:
+
+* https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install_5.html#java-library-credentials_5
+
 All Java dependencies should be bundled in the fat jars.
 Jars can be run using the following command line (as an example):
 
