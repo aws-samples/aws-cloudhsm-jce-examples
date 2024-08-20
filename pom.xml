@@ -19,7 +19,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <cloudhsmVersion>5.12.0</cloudhsmVersion>
+                <cloudhsmVersion>5.13.0</cloudhsmVersion>
                 <cloudhsmJarPath>/opt/cloudhsm/java/cloudhsm-jce-${cloudhsmVersion}.jar</cloudhsmJarPath>
             </properties>
         </profile>
@@ -814,7 +814,7 @@
                             <arguments>
                                 <argument>-enableassertions</argument>
                                 <argument>-jar</argument>
-                                <argument>target/assembly/ECImportKey.jar</argument>
+                                <argument>target/assembly/ec-import-key.jar</argument>
                                 <argument>--method</argument>
                                 <argument>environment</argument>
                             </arguments>
