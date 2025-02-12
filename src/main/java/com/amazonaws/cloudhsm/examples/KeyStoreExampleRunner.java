@@ -74,9 +74,11 @@ public class KeyStoreExampleRunner {
                 + "\t--help\t\t\tDisplay this message.\n" + "\t--store <filename>\t\tPath of the keystore.\n"
                 + "\t--password <password>\t\tPassword for the keystore (not your CU password).\n"
                 + "\t--label <label>\t\t\tLabel to store the key and certificate under.\n"
+                + "\t--createkeystore \t\t\tCreate key store and a key pair with the provide label.\n"
                 + "\t--list\t\t\tList all the keys in the keystore.\n"
                 + "\t--rsa-private-keys\t\tGet all RSA private keys using getKeys and KeyAttributesMap.\n"
-                + "\t--getkey <key-reference-long>\t\tGet a matching key using key-reference.\n\n";
+                + "\t--getkey <key-reference-long>\t\tGet a matching key using key-reference.\n"
+                + "\t--run-all \t\tRun all operations with sample arguments.\n\n";
 
     public static void main(final String[] args) throws Exception {
         try {
@@ -105,6 +107,9 @@ public class KeyStoreExampleRunner {
                 case "--label":
                     labelArg = args[++i];
                     break;
+                case "--createkeystore":
+                    operation = Operation.CreateKeystore;
+                    break;
                 case "--list":
                     operation = Operation.List;
                     break;
@@ -114,6 +119,9 @@ public class KeyStoreExampleRunner {
                 case "--getkey":
                     operation = Operation.GetKeyByReference;
                     keyReferenceValue = args[++i];
+                    break;
+                case "--run-all":
+                    operation = Operation.RunAll;
                     break;
                 case "--help":
                     help();
@@ -126,7 +134,11 @@ public class KeyStoreExampleRunner {
             return;
         }
 
+
         switch (operation) {
+            case CreateKeystore:
+                createKeystore(keystoreFile, password,labelArg);
+                return;
             case List:
                 listKeys(keystoreFile, password);
                 return;
@@ -136,7 +148,27 @@ public class KeyStoreExampleRunner {
             case GetKeyByReference:
                 getKey(keystoreFile, password, keyReferenceValue);
                 return;
+            case RunAll:
+                runAll(keystoreFile, password);
+                return;
         }
+
+
+
+    }
+
+    private enum Operation {
+        None, List, GetKeys, GetKeyByReference, CreateKeystore, RunAll
+    }
+
+    private static void help() {
+        System.out.println(helpString);
+    }
+
+    /** Create keystore and a key pair with passed label */
+
+    private static void createKeystore(final String keystoreFile, final String password, final String labelArg)
+        throws Exception {
 
         final String label;
         if (null == labelArg) {
@@ -195,15 +227,10 @@ public class KeyStoreExampleRunner {
                 (PrivateKeyEntry) keyStore.getEntry(privateLabel, passwordProtection);
         final String name = keyEntry.getCertificate().toString();
         System.out.printf("Found private key with label %s and certificate %s%n", label, name);
+
+
     }
 
-    private enum Operation {
-        None, List, GetKeys, GetKeyByReference
-    }
-
-    private static void help() {
-        System.out.println(helpString);
-    }
 
     /** List all the keys in the keystore. */
     private static void listKeys(final String keystoreFile, final String password)
@@ -323,6 +350,22 @@ public class KeyStoreExampleRunner {
             System.err.println("Error in getKey Operation " + e);
             throw new RuntimeException(e);
         }
+    }
+
+
+    /** Run all the operations with test parameters */
+    private static void runAll(final String keystoreFile, final String password) throws Exception{
+        final String labelArg = "testSample";
+
+        System.out.println("Starting createkeystore operation:");
+        createKeystore(keystoreFile, password,labelArg);
+
+        System.out.println("\nStarting listKeys operation:");
+        listKeys(keystoreFile, password);
+
+        System.out.println("\nStarting getKeys operation:");
+        getKeys(keystoreFile, password);
+
     }
 
 }
