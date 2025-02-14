@@ -62,14 +62,16 @@ public class KeyUtilitiesRunner {
             "\t--get-key\t\tGet information about a key in the HSM\n" +
             "\t--delete-key\t\tDelete a key from the HSM\n" +
             "\t--import-key\t\tGenerates a key locally and imports it into the HSM\n" +
-            "\t--import-rsa-pem\t\tRead a PEM file and import the private key\n\n";
+            "\t--import-rsa-pem\t\tRead a PEM file and import the private key\n" +
+            "\t--run-all\t\tRun all the operations(Import_key, Get_key, Delete_key) sequentially with sample arguments\n\n";
 
     private enum modes {
         INVALID,
         GET_KEY,
         DELETE_KEY,
         IMPORT_KEY,
-        IMPORT_PEM
+        IMPORT_PEM,
+        RUN_ALL
     }
 
     private static String formatStringForKeyDetails = "%-12s%-12s%-12s%-12s%-12s%s\n";
@@ -111,8 +113,16 @@ public class KeyUtilitiesRunner {
                     pemFile = args[++i];
                     mode = modes.IMPORT_PEM;
                     break;
+                case "--run-all":
+                    mode = modes.RUN_ALL;
+                    break;
+                case "--help":
+                    help();
+                    return;
             }
         }
+
+
         KeyType keyType = null;
         if (keyTypeString !=null) {
             switch (keyTypeString) {
@@ -173,6 +183,12 @@ public class KeyUtilitiesRunner {
                 }
                 break;
             }
+            case RUN_ALL:{
+                // Run import key, get key and delete key
+                runAll("Test");
+                break;
+
+            }
             case DELETE_KEY: {
                 deleteKey(label);
                 break;
@@ -182,6 +198,36 @@ public class KeyUtilitiesRunner {
 
     private static void help() {
         System.out.println(helpString);
+    }
+
+    /** Run all the operations with test parameters */
+    private static void runAll(String label) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException,
+        UnrecoverableKeyException, AddAttributeException, InvalidKeySpecException{
+
+        System.out.println("Starting importKey operation:");
+        // Generate a 256-bit AES symmetric key.
+        KeyGenerator kg = KeyGenerator.getInstance("AES");
+        kg.init(256);
+        Key keyToBeImported = kg.generateKey();    
+        importAesKey(keyToBeImported, label);
+
+        // Get key using the label
+        System.out.println("\nStarting getKey operation:");
+        Key key = null;
+        key = getKeyByLabel(label);
+        if (null != key) {
+            System.out.println("Fetched key with label: " + label);
+            try {
+                // Delete the key
+                System.out.println("\nStarting deleteKey operation:");
+                deleteKey(label);
+            } catch (DestroyFailedException e) {
+                System.err.println("Failed to destroy key: " + e.getMessage());
+            }
+        } else {
+                System.out.println("Could not find the given key label " + label);
+        }
+
     }
 
     /**
@@ -221,7 +267,7 @@ public class KeyUtilitiesRunner {
         keyStore.load(null, null);
         return keyStore.getKey(findSpec);
     }
-
+    
     /**
      * Delete a key by label.
      * @param label The key label in the HSM.
@@ -229,8 +275,17 @@ public class KeyUtilitiesRunner {
     private static void deleteKey(String label)
         throws UnrecoverableKeyException, CertificateException, IOException,
         NoSuchAlgorithmException, KeyStoreException, DestroyFailedException {
+    
+        // Get the key
         Key keyToBeDeleted = getKeyByLabel(label);
+        if (keyToBeDeleted == null){  
+            System.out.println("No key to delete.");
+            return;
+        }
+
+        // Delete the key
         ((Destroyable) keyToBeDeleted).destroy();
+        System.out.println("Key deleted");
     }
 
     /**
@@ -297,6 +352,7 @@ public class KeyUtilitiesRunner {
         try {
             SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("AES", CloudHsmProvider.PROVIDER_NAME);
             SecretKey importedKey = keyFactory.generateSecret(keySpec);
+            System.out.println("Key imported successfully with label: " + keyLabel);
             return importedKey;
         } catch (InvalidKeySpecException | NoSuchAlgorithmException | NoSuchProviderException e) {
             e.printStackTrace();
