@@ -44,7 +44,11 @@ public class AsymmetricKeys {
      * @throws NoSuchAlgorithmException
      * @throws NoSuchProviderException
      */
-    public static KeyPair generateECKeyPair(byte[] curveParams, String label)
+    public static KeyPair generateECKeyPair(
+            byte[] curveParams,
+            String label,
+            KeyAttributesMap additionalPublicKeyAttributes,
+            KeyAttributesMap additionalPrivateKeyAtttibutes)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
                     NoSuchProviderException, AddAttributeException {
 
@@ -53,12 +57,14 @@ public class AsymmetricKeys {
 
         // Set attributes for EC public key
         final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
+        publicKeyAttrsMap.putAll(additionalPublicKeyAttributes);
         publicKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Public");
         publicKeyAttrsMap.put(KeyAttribute.EC_PARAMS, curveParams);
 
         // Set attributes for EC private key
-        final KeyAttributesMap privateKeyAttrsMap =
-                new KeyAttributesMapBuilder().put(KeyAttribute.LABEL, label + ":Private").build();
+        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMap();
+        privateKeyAttrsMap.putAll(additionalPrivateKeyAtttibutes);
+        privateKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Private");
 
         // Create KeyPairAttributesMap and use that to initialize the keyPair generator
         KeyPairAttributesMap keyPairSpec =
@@ -69,6 +75,12 @@ public class AsymmetricKeys {
         keyPairGen.initialize(keyPairSpec);
 
         return keyPairGen.generateKeyPair();
+    }
+
+    public static KeyPair generateECKeyPair(byte[] curveParams, String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+            NoSuchProviderException, AddAttributeException {
+        return generateECKeyPair(curveParams, label, new KeyAttributesMap(), new KeyAttributesMap());
     }
 
     /**
