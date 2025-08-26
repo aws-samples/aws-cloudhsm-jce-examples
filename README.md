@@ -70,8 +70,9 @@ Jars can be run using the following command line (as an example):
 java -ea -jar target/assembly/login-runner.jar --help
 ```
 
-Note that sample `desecb-runner.jar` and `cbc-runner.jar` are expected to fail in clusters in FIPS mode
-because the corresponding mechanisms are deprecated.
+Note that sample `desecb-runner.jar` and `cbc-runner.jar` are expected to fail if your cluster has the `hsm2m.medium`
+HSM type and is in FIPS mode, because the corresponding mechanisms are deprecated. For more information on this, see
+the CloudHSM [public doc](https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-samples.html#java-samples-code-5-note-1).
 
 ## Running and verifying all the samples
 
