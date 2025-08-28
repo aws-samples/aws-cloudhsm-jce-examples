@@ -16,34 +16,17 @@ They should be installed using the official procedures documented here:
 
 * https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-library-install_5.html
 
-The examples are tested on a fresh Amazon Linux 2 AMI. You will need to have the following packages 
+The examples are tested on Amazon Linux 2 and Amazon Linux 2023. You will need to have the following packages 
 installed:
 
-* OpenJDK 8
+* OpenJDK 17
 * Apache Maven 3.0.5
 
-You can install these packages on Amazon Linux 2 by running
+You can install these packages on Amazon Linux 2 (or Amazon Linux 2023) by running
 
 ```
-sudo yum install -y java-1.8.0-amazon-corretto-devel maven
+sudo yum install -y java-17-amazon-corretto-devel maven
 ```
-
-If you are running on Amazon Linux 1, you will need to install extra packages to get Maven.
-You can follow these instructions to build the samples on Amazon Linux 1:
-
-```
-# Maven is only available through extra packages
-sudo wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
-sudo sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
-
-# You will need Java 1.8 to build the samples
-sudo yum install -y java-1.8.0-openjdk-devel
-sudo yum install -y apache-maven
-
-# When updating alternatives, choose the 1.8 path: /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java
-sudo update-alternatives --config java
-```
-
 
 ### Building
 
@@ -57,7 +40,7 @@ you may need to make modifications if you are running an older version (note tha
 with older versions of the client). To do this, modify the following line in the `pom.xml` to match your version:
 
 ```
-<cloudhsmVersion>5.5.0</cloudhsmVersion>
+<cloudhsmVersion>5.16.1</cloudhsmVersion>
 ```
 
 
@@ -86,6 +69,10 @@ Jars can be run using the following command line (as an example):
 ```
 java -ea -jar target/assembly/login-runner.jar --help
 ```
+
+Note that sample `desecb-runner.jar` and `cbc-runner.jar` are expected to fail if your cluster has the `hsm2m.medium`
+HSM type and is in FIPS mode, because the corresponding mechanisms are deprecated. For more information on this, see
+the CloudHSM [public doc](https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-samples.html#java-samples-code-5-note-1).
 
 ## Running and verifying all the samples
 
