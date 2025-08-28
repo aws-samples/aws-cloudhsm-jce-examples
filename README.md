@@ -40,7 +40,7 @@ you may need to make modifications if you are running an older version (note tha
 with older versions of the client). To do this, modify the following line in the `pom.xml` to match your version:
 
 ```
-<cloudhsmVersion>5.16.2</cloudhsmVersion>
+<cloudhsmVersion>5.16.1</cloudhsmVersion>
 ```
 
 
