@@ -35,6 +35,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -58,6 +59,9 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 
+import javax.security.auth.DestroyFailedException;
+import javax.security.auth.Destroyable;
+
 /**
  * KeyStoreExampleRunner demonstrates how to load a keystore, get a key entry, sign and store a
  * certificate with the key and list all aliases on the keystore.
@@ -70,15 +74,18 @@ public class KeyStoreExampleRunner {
 
     private static final String helpString =
             "KeyStoreExampleRunner\n"
-                + "This sample demonstrates how to load and store keys using a keystore.\n\n" + "Options\n"
-                + "\t--help\t\t\tDisplay this message.\n" + "\t--store <filename>\t\tPath of the keystore.\n"
+                + "This sample demonstrates how to load and store keys using a keystore.\n\n"
+                + "Options\n"
+                + "\t--help\t\t\t\tDisplay this message.\n"
+                + "\t--store <filename>\t\tPath of the keystore.\n"
                 + "\t--password <password>\t\tPassword for the keystore (not your CU password).\n"
                 + "\t--label <label>\t\t\tLabel to store the key and certificate under.\n"
-                + "\t--createkeystore \t\t\tCreate key store and a key pair with the provide label.\n"
-                + "\t--list\t\t\tList all the keys in the keystore.\n"
+                + "\t--createkeystore\t\tCreate key store and a key pair with the provided label.\n"
+                + "\t--deletekey\t\t\tDelete a key from both HSM and keystore file.\n"
+                + "\t--list\t\t\t\tList all the keys in the keystore.\n"
                 + "\t--rsa-private-keys\t\tGet all RSA private keys using getKeys and KeyAttributesMap.\n"
-                + "\t--getkey <key-reference-long>\t\tGet a matching key using key-reference.\n"
-                + "\t--run-all \t\tRun all operations with sample arguments.\n\n";
+                + "\t--getkey <key-reference-long>\tGet a matching key using key-reference.\n"
+                + "\t--run-all\t\t\tRun all operations with sample arguments.\n\n";
 
     public static void main(final String[] args) throws Exception {
         try {
@@ -96,7 +103,6 @@ public class KeyStoreExampleRunner {
         String keyReferenceValue = null;
         Operation operation = Operation.None;
         for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
             switch (args[i]) {
                 case "--store":
                     keystoreFile = args[++i];
@@ -109,6 +115,9 @@ public class KeyStoreExampleRunner {
                     break;
                 case "--createkeystore":
                     operation = Operation.CreateKeystore;
+                    break;
+                case "--deletekey":
+                    operation = Operation.Delete;
                     break;
                 case "--list":
                     operation = Operation.List;
@@ -134,10 +143,12 @@ public class KeyStoreExampleRunner {
             return;
         }
 
-
         switch (operation) {
             case CreateKeystore:
-                createKeystore(keystoreFile, password,labelArg);
+                createKeystore(keystoreFile, password, labelArg);
+                return;
+            case Delete:
+                deleteKeys(keystoreFile, password, labelArg);
                 return;
             case List:
                 listKeys(keystoreFile, password);
@@ -151,18 +162,123 @@ public class KeyStoreExampleRunner {
             case RunAll:
                 runAll(keystoreFile, password);
                 return;
+            default:
+                System.out.println("No operation selected");
         }
-
-
-
     }
 
     private enum Operation {
-        None, List, GetKeys, GetKeyByReference, CreateKeystore, RunAll
+        None, List, GetKeys, GetKeyByReference, CreateKeystore, Delete, RunAll
     }
 
     private static void help() {
         System.out.println(helpString);
+    }
+
+    /**
+     * Delete keys from HSM and remove the corresponding entry from the local keystore file.
+     * Takes a base label and handles the ":Private" suffix internally.
+     *
+     * CloudHSM's KeyStore.deleteEntry() only supports TrustedCertificateEntry, not
+     * PrivateKeyEntry, so we work around this by rebuilding the keystore file without
+     * the deleted alias.
+     */
+    private static void deleteKeys(final String keystoreFile, final String password, final String labelArg)
+            throws Exception {
+
+        final String label;
+        if (null == labelArg) {
+            label = "Keystore Example Keypair";
+        } else {
+            label = labelArg;
+        }
+
+        final String privateLabel = label + ":Private";
+        final PasswordProtection pp = new PasswordProtection(password.toCharArray());
+
+        /*
+         * Step 1 – Load the file-backed keystore and collect every entry we want to KEEP.
+         *          We do this BEFORE destroying the HSM key so that all key references
+         *          are still valid and getEntry() succeeds for the other aliases.
+         */
+        final File ksFile = new File(keystoreFile);
+        final KeyStore newStore = KeyStore.getInstance("pkcs12");
+        newStore.load(null, null);
+        boolean hadAlias = false;
+        boolean hasOtherEntries = false;
+        if (ksFile.exists()) {
+            final KeyStore fileStore = KeyStore.getInstance("pkcs12");
+            try (FileInputStream in = new FileInputStream(ksFile)) {
+                fileStore.load(in, password.toCharArray());
+            }
+
+            final String encodedPrivateLabel = hexEncodeAlias(privateLabel);
+            hadAlias = fileStore.containsAlias(encodedPrivateLabel);
+
+            for (final Enumeration<String> aliases = fileStore.aliases(); aliases.hasMoreElements(); ) {
+                final String encodedAlias = aliases.nextElement();
+                if (encodedAlias.equals(encodedPrivateLabel)) {
+                    continue; // skip the entry we are deleting
+                }
+                newStore.setEntry(encodedAlias, fileStore.getEntry(encodedAlias, pp), pp);
+                hasOtherEntries = true;
+            }
+        }
+
+        /*
+         * Step 2 – Destroy the key on the HSM.
+         */
+        final KeyStore hsmKeyStore = KeyStore.getInstance(CloudHsmProvider.CLOUDHSM_KEYSTORE_TYPE);
+        hsmKeyStore.load(null, null);
+        try {
+            deleteKeyFromHsm(hsmKeyStore, privateLabel);
+        } catch (final RuntimeException e) {
+            System.err.println("Skipping keystore file update — HSM key was not destroyed:");
+            e.printStackTrace(System.err);
+            return;
+        }
+
+        /*
+         * Step 3 – Update the local keystore file.
+         */
+        if (!ksFile.exists()) {
+            System.out.println("Keystore file '" + keystoreFile + "' not found, nothing to clean up locally.");
+        } else if (!hadAlias) {
+            System.out.println("Alias '" + privateLabel + "' not found in keystore file.");
+        } else if (hasOtherEntries) {
+            // Rewrite the file with the remaining entries only.
+            try (FileOutputStream out = new FileOutputStream(ksFile)) {
+                newStore.store(out, password.toCharArray());
+            }
+            System.out.println("Removed '" + privateLabel + "' from keystore file '" + keystoreFile + "'.");
+        } else {
+            // No entries left – delete the file entirely.
+            if (ksFile.delete()) {
+                System.out.println("Deleted keystore file '" + keystoreFile + "' (no entries remaining).");
+            } else {
+                System.err.println("Warning: could not delete keystore file '" + keystoreFile + "'.");
+            }
+        }
+    }
+
+    /**
+     * Attempt to find a key on the HSM by alias and destroy it.
+     * Does not throw if the key is not found.
+     */
+    private static void deleteKeyFromHsm(final KeyStore keyStore, final String alias) {
+        try {
+            final Key key = keyStore.getKey(alias, null);
+            if (key == null) {
+                System.out.println("Key '" + alias + "' not found on HSM, nothing to delete.");
+                return;
+            }
+            ((Destroyable) key).destroy();
+            System.out.println("Destroyed key '" + alias + "' from HSM.");
+        } catch (final DestroyFailedException e) {
+            throw new RuntimeException("Failed to destroy key '" + alias + "' from HSM", e);
+        } catch (final Exception e) {
+            throw new RuntimeException("Error looking up key '" + alias + "' on HSM", e);
+        }
     }
 
     /** Create keystore and a key pair with passed label */
@@ -350,18 +466,25 @@ public class KeyStoreExampleRunner {
         }
     }
 
+    private static String hexEncodeAlias(final String alias) {
+        return java.util.HexFormat.of().formatHex(
+                alias.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
 
     /** Run all the operations with test parameters */
-    private static void runAll(final String keystoreFile, final String password) throws Exception{
+    private static void runAll(final String keystoreFile, final String password) throws Exception {
         final String labelArg = "testSample";
 
         System.out.println("Starting createkeystore operation:");
-        createKeystore(keystoreFile, password,labelArg);
+        createKeystore(keystoreFile, password, labelArg);
 
         System.out.println("\nStarting listKeys operation:");
         listKeys(keystoreFile, password);
 
         System.out.println("\nStarting getKeys operation:");
         getKeys(keystoreFile, password);
+
+        System.out.println("\nStarting delete operation:");
+        deleteKeys(keystoreFile, password, labelArg);
     }
 }
