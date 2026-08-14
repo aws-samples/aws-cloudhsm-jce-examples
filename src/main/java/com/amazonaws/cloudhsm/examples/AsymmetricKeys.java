@@ -243,4 +243,51 @@ public class AsymmetricKeys {
         generator.initialize(new KeyPairAttributesMap(publicMap, privateMap), null);
         return generator.generateKeyPair();
     }
+
+    /**
+     * Generate an Ed25519 key pair for EdDSA signing. The label passed will be appended with
+     * ":Public" and ":Private" for the respective keys. The "Ed25519" algorithm is pre-initialized,
+     * no curve specification is needed.
+     *
+     * @return a key pair object that represents the keys on the HSM.
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     */
+    public static KeyPair generateEd25519KeyPair(
+            String label,
+            KeyAttributesMap additionalPublicKeyAttributes,
+            KeyAttributesMap additionalPrivateKeyAtttibutes)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                    NoSuchProviderException, AddAttributeException {
+
+        final KeyPairGenerator keyPairGen =
+                KeyPairGenerator.getInstance("Ed25519", CloudHsmProvider.PROVIDER_NAME);
+
+        // Set attributes for EdDSA public key
+        final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
+        publicKeyAttrsMap.putAll(additionalPublicKeyAttributes);
+        publicKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Public");
+
+        // Set attributes for EdDSA private key
+        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMap();
+        privateKeyAttrsMap.putAll(additionalPrivateKeyAtttibutes);
+        privateKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Private");
+
+        // Create KeyPairAttributesMap and use that to initialize the keyPair generator
+        KeyPairAttributesMap keyPairSpec =
+                new KeyPairAttributesMapBuilder()
+                        .withPublic(publicKeyAttrsMap)
+                        .withPrivate(privateKeyAttrsMap)
+                        .build();
+        keyPairGen.initialize(keyPairSpec);
+
+        return keyPairGen.generateKeyPair();
+    }
+
+    public static KeyPair generateEd25519KeyPair(String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+            NoSuchProviderException, AddAttributeException {
+        return generateEd25519KeyPair(label, new KeyAttributesMap(), new KeyAttributesMap());
+    }
 }
