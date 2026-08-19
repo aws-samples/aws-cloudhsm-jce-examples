@@ -16,6 +16,7 @@
  */
 package com.amazonaws.cloudhsm.examples;
 
+import com.amazonaws.cloudhsm.jce.jni.MldsaAlgorithm;
 import com.amazonaws.cloudhsm.jce.jni.exception.AddAttributeException;
 import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
 import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttribute;
@@ -23,6 +24,7 @@ import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMap;
 import com.amazonaws.cloudhsm.jce.provider.attributes.KeyAttributesMapBuilder;
 import com.amazonaws.cloudhsm.jce.provider.attributes.KeyPairAttributesMap;
 import com.amazonaws.cloudhsm.jce.provider.attributes.KeyPairAttributesMapBuilder;
+import com.amazonaws.cloudhsm.jce.provider.attributes.KeyType;
 
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -174,5 +176,71 @@ public class AsymmetricKeys {
         keyPairGen.initialize(keyPairSpec);
 
         return keyPairGen.generateKeyPair();
+    }
+
+    /**
+     * Generate an ML-DSA key pair on the HSM. The label passed will be appended with ":Public" and
+     * ":Private" for the respective keys. Supported algorithms are MlDsa44, MlDsa65, and MlDsa87.
+     *
+     * @return a key pair object that represents the keys on the HSM.
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     */
+    public static KeyPair generateMldsaKeyPair(MldsaAlgorithm algorithm, String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                    NoSuchProviderException, AddAttributeException {
+        return doGenerateMldsaKeyPair(
+                algorithm, label, new KeyAttributesMap(), new KeyAttributesMap());
+    }
+
+    /**
+     * Generate an ML-DSA key pair on the HSM with additional key attributes. The label passed will
+     * be appended with ":Public" and ":Private" for the respective keys. Supported algorithms are
+     * MlDsa44, MlDsa65, and MlDsa87.
+     *
+     * @return a key pair object that represents the keys on the HSM.
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     */
+    public static KeyPair generateMldsaKeyPair(
+            MldsaAlgorithm algorithm,
+            String label,
+            KeyAttributesMap additionalPublicKeyAttributes,
+            KeyAttributesMap additionalPrivateKeyAttributes)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                    NoSuchProviderException, AddAttributeException {
+        return doGenerateMldsaKeyPair(
+                algorithm, label, additionalPublicKeyAttributes, additionalPrivateKeyAttributes);
+    }
+
+    private static KeyPair doGenerateMldsaKeyPair(
+            MldsaAlgorithm algorithm,
+            String label,
+            KeyAttributesMap additionalPublicKeyAttributes,
+            KeyAttributesMap additionalPrivateKeyAttributes)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+                    NoSuchProviderException, AddAttributeException {
+
+        KeyPairGenerator generator =
+                KeyPairGenerator.getInstance("ML-DSA", CloudHsmProvider.PROVIDER_NAME);
+
+        KeyAttributesMap publicMap = new KeyAttributesMap();
+        publicMap.putAll(additionalPublicKeyAttributes);
+        publicMap.put(KeyAttribute.KEY_TYPE, KeyType.MLDSA);
+        publicMap.put(KeyAttribute.MLDSA_ALGORITHM, algorithm);
+        publicMap.put(KeyAttribute.LABEL, label + ":Public");
+        publicMap.put(KeyAttribute.VERIFY, true);
+
+        KeyAttributesMap privateMap = new KeyAttributesMap();
+        privateMap.putAll(additionalPrivateKeyAttributes);
+        privateMap.put(KeyAttribute.KEY_TYPE, KeyType.MLDSA);
+        privateMap.put(KeyAttribute.MLDSA_ALGORITHM, algorithm);
+        privateMap.put(KeyAttribute.LABEL, label + ":Private");
+        privateMap.put(KeyAttribute.SIGN, true);
+
+        generator.initialize(new KeyPairAttributesMap(publicMap, privateMap), null);
+        return generator.generateKeyPair();
     }
 }
