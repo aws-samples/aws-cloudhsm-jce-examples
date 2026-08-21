@@ -601,6 +601,58 @@
                             </filters>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>build-eddsaops-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/eddsaops-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.EdDSAOperationsRunner</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>eddsaops-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-eddsa-import-runner</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>target/assembly/eddsa-import-runner.jar</outputFile>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.amazonaws.cloudhsm.examples.EdDSAImportKey</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>eddsa-import-runner</finalName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -913,6 +965,36 @@
                             </arguments>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>verify-eddsa-ops</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/eddsaops-runner.jar</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-eddsa-import</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/eddsa-import-runner.jar</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -924,7 +1006,12 @@
             <artifactId>cloudhsm</artifactId>
             <version>${cloudhsmVersion}</version>
         </dependency>
-        <!-- Bouncy Castle, for generating a certificate to sign. -->
+        <!-- Bouncy Castle, for generating keys and certificates. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.83</version>
+        </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
