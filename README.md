@@ -58,3 +58,29 @@ Note that sample `desecb-runner.jar` and `cbc-runner.jar` are expected to fail i
 ## Running and verifying all the samples
 
 To run and verify all the samples together, run the command ```mvn verify```
+
+## Running with Oracle JDK
+
+The default `java -jar` invocation uses fat JARs built by the Maven shade plugin. These fat JARs are **not compatible with Oracle JDK** because the shade plugin repackages the signed CloudHSM provider classes into an unsigned JAR. Oracle JDK enforces JCE provider signing for `javax.crypto` operations (Cipher, Mac, KeyGenerator, KeyAgreement) and will reject unsigned provider JARs with:
+
+```
+java.security.NoSuchProviderException: JCE cannot authenticate the provider CloudHSM
+```
+
+Note that `java.security` operations (Signature, KeyPairGenerator) are not affected — only `javax.crypto` operations require JCE provider signing on Oracle JDK.
+
+To run the samples on Oracle JDK, use `-cp` instead of `-jar` so the signed CloudHSM JAR is loaded directly:
+
+```sh
+mvn package
+mvn dependency:copy-dependencies
+java -ea \
+    -Djava.library.path=/opt/cloudhsm/lib \
+    -cp "target/classes:target/dependency/*" \
+    com.amazonaws.cloudhsm.examples.AESGCMEncryptDecryptRunner \
+    --method environment --user <cu_user> --password <cu_pass>
+```
+
+Replace the main class name with the runner for the sample you want to run. The main class for each sample follows the pattern `com.amazonaws.cloudhsm.examples.<RunnerClassName>` — you can find the runner class name in the corresponding source file under `src/main/java/com/amazonaws/cloudhsm/examples/`.
+
+**For your own applications:** If you are using Oracle JDK, do not repackage `cloudhsm-jce-*.jar` into a fat/uber JAR (Maven shade, Gradle shadow, Spring Boot fat JAR, etc.). Keep it as a separate JAR on the classpath.
