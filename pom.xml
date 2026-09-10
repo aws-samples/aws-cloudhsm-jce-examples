@@ -10,6 +10,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <keystore.test.password>changeit</keystore.test.password>
     </properties>
 
     <profiles>
@@ -792,8 +793,11 @@
                                 <argument>-enableassertions</argument>
                                 <argument>-jar</argument>
                                 <argument>target/assembly/cloudhsm-keystore-runner.jar</argument>
-                                <argument>--method</argument>
-                                <argument>environment</argument>
+                                <argument>--store</argument>
+                                <argument>${java.io.tmpdir}/cloudhsm-keystore-test.jks</argument>
+                                <argument>--password</argument>
+                                <argument>${keystore.test.password}</argument>
+                                <argument>--run-all</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -995,6 +999,40 @@
                             </arguments>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>verify-mldsa-ops</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/mldsa-operations-runner.jar</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-mldsa-keystore</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-enableassertions</argument>
+                                <argument>-jar</argument>
+                                <argument>target/assembly/mldsa-keystore-runner.jar</argument>
+                                <argument>--store</argument>
+                                <argument>${java.io.tmpdir}/mldsa-keystore-test.jks</argument>
+                                <argument>--password</argument>
+                                <argument>${keystore.test.password}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -1010,12 +1048,12 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.83</version>
+            <version>1.84</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.83</version>
+            <version>1.84</version>
         </dependency>
     </dependencies>
 </project>
